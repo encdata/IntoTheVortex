@@ -1,34 +1,58 @@
 🌀 Into the Vortex
-A TARDIS Mod for Minecraft 26.1.2 — Fabric
+A TARDIS Mod for Minecraft 26.1.2
 
-Into the Vortex is a Doctor Who–inspired TARDIS mod for Minecraft 26.1.2 on Fabric, bringing time travel, exploration, and the thrill of the Vortex into your Minecraft world.
+Into the Vortex is a TARDIS mod for Minecraft 26.1.2, built for Fabric.
 
-Build, customise, and operate your very own TARDIS as you journey through time and space.
+Step inside your very own TARDIS, explore the world around you, and take your first steps into the Vortex.
+
+Whether you're a long-time Doctor Who fan or simply looking for a new way to explore Minecraft, Into the Vortex aims to bring the experience of travelling through time and space into the game.
 
 ✨ Features
 
-Into the Vortex aims to bring the experience of travelling through time and space to Minecraft.
+Into the Vortex is built around the idea of bringing TARDIS travel and exploration to Minecraft.
 
-🏠 TARDISes — Build and customise your very own time machine.
-⏳ Time Travel — Travel across time and space and explore new destinations.
-🌌 The Vortex — Enter the Time Vortex and experience the journey between destinations.
-🎛️ TARDIS Controls — Operate your TARDIS through an interactive console.
-🔧 Customisation — Make your TARDIS your own.
-🚪 TARDIS Interiors — Explore and customise the interior of your time machine.
-🔊 Immersive Audio — Experience sounds designed to capture the atmosphere of travelling in a TARDIS.
-🌍 Exploration — Discover new places and embark on adventures across time and space.
+🏠 TARDIS
 
-More features are currently in development.
+Your TARDIS is your home, your vehicle, and your gateway to adventure.
+
+Explore the interior, interact with the controls, and prepare yourself for your next journey.
+
+🌌 The Vortex
+
+Step into the Vortex and leave the ordinary Minecraft world behind.
+
+Travel through time and space and see where your TARDIS takes you.
+
+🎛️ TARDIS Controls
+
+Operate your TARDIS through its controls and systems.
+
+Learn how everything works and become a true Time Lord.
+
+🌍 Exploration
+
+The universe is a big place.
+
+Use your TARDIS to explore Minecraft in a completely different way and discover new places on your adventures.
+
+🔧 Customisation
+
+Make your TARDIS yours.
+
+Customisation and additional features are planned as the project continues to develop.
 
 📦 Requirements
-Minecraft
-Minecraft 26.1.2
-Mod Loader
+
+Minecraft: 26.1.2
+
+Mod Loader: Fabric
+
+Required Dependencies:
+
 Fabric Loader
-Dependencies
 Fabric API
 
-Additional dependencies may be required depending on the version of the mod.
+Additional dependencies may be required depending on the version of Into the Vortex.
 
 🚀 Installation
 1. Install Fabric
@@ -37,87 +61,102 @@ Install Fabric Loader for Minecraft 26.1.2.
 
 2. Install Fabric API
 
-Download and install the appropriate version of Fabric API for Minecraft 26.1.2.
+Download the appropriate version of Fabric API for Minecraft 26.1.2.
 
 3. Install Into the Vortex
 
-Download the latest Into the Vortex .jar file and place it into your Minecraft:
+Download the latest release of Into the Vortex.
 
-.minecraft/mods
+Place the .jar file into your Minecraft mods folder:
 
-4. Launch Minecraft
+.minecraft/
+└── mods/
+    ├── fabric-api.jar
+    └── into-the-vortex.jar
+
+4. Launch the Game
 
 Start Minecraft using your Fabric installation.
 
-Once Minecraft loads, enter a world and begin your journey into the Vortex!
+Once Minecraft has loaded, create or enter a world and begin your journey.
 
 🎮 Getting Started
 
-Your journey begins with the TARDIS.
+Once you've entered your world, it's time to begin your journey.
 
-Explore the world, gather the resources you need, and begin working towards obtaining your own time machine.
+Explore, gather resources, learn how the TARDIS works, and prepare yourself for your first trip into the Vortex.
 
-Once you have access to a TARDIS, familiarise yourself with its controls before taking your first trip through the Vortex.
+Your TARDIS is more than just a way of getting from one place to another.
 
-Allons-y!
+It's your gateway to adventure.
 
-🌀 The Vortex
+🌀 Travelling Through the Vortex
 
-The Vortex is the space between destinations — the place where your TARDIS travels when moving through time and space.
+Travelling through the Vortex is at the heart of Into the Vortex.
 
-Prepare your TARDIS, set your destination, and take the plunge.
+Prepare your TARDIS, choose your destination, and set off into time and space.
 
-Where — and when — will you go?
+Time is relative. Your adventure isn't.
 
-🎛️ TARDIS Controls
-
-This section will document the controls and functions available within the TARDIS.
-
+🎛️ Controls
 Control	Function
 TBD	TBD
 TBD	TBD
 TBD	TBD
 
-Detailed controls will be added as the mod's systems are finalised.
+More information about TARDIS controls will be added as the mod's systems are documented.
 
-🔧 Configuration
+⚙️ Configuration
 
 Configuration options will be documented here as they become available.
 
-🐛 Bug Reports
+If a feature can be customised through a configuration file, details about the available options will be provided here.
+
+🐛 Bugs & Issues
 
 Found a bug?
 
-Please report it to the development team with as much information as possible.
+Please report it to the development team.
 
-Include:
+When reporting an issue, please include as much information as possible:
 
 Minecraft version
 Into the Vortex version
 Fabric Loader version
 Fabric API version
 Other installed mods
+A description of the issue
 Steps to reproduce the issue
-Crash logs
-Screenshots or videos, if applicable
-Before reporting
+Crash logs, if applicable
+Screenshots or videos, if useful
 
-Please check whether the issue has already been reported. Duplicate reports make it harder for us to track and resolve problems.
+Before submitting a report, please check whether the issue has already been reported.
 
-🛠️ Development
+💡 Suggestions & Feedback
 
-Into the Vortex is actively being developed.
+Have an idea for Into the Vortex?
 
-The mod is currently targeting:
+We'd love to hear it.
+
+Suggestions for new features, improvements, TARDIS customisation, gameplay mechanics, and quality-of-life improvements are welcome.
+
+Please remember that not every suggestion can be implemented, but feedback helps shape the future of the project.
+
+🚧 Development
+
+Into the Vortex is an ongoing project.
+
+The mod is currently being developed for:
 
 Minecraft: 26.1.2
 Mod Loader: Fabric
-Status: 🚧 In Development
+Status: In Development
 
 
-Features and mechanics may change during development. Some features may be experimental, incomplete, or subject to change in future releases.
+Features may change during development, and some systems may be unfinished or experimental.
 
 👥 Credits
+Development Team
 
 Into the Vortex is created by:
 
@@ -127,29 +166,45 @@ H0zom
 KitKatKae
 CFProductionz
 
-Thank you to everyone who contributes to the project through development, testing, modelling, artwork, audio, bug reports, suggestions, and community support.
+Thank you to everyone involved in the development and testing of the project.
 
 📜 Licence
 
-Copyright © 2026 Into the Vortex Development Team.
+Into the Vortex is released under the CC0 1.0 Universal licence.
 
-Unless otherwise stated, you may not redistribute, reupload, modify, or commercially use the project's files or assets without permission from the development team.
+To the extent possible under law, the creators have waived all copyright and related rights to this work.
 
-Third-party assets and dependencies remain subject to their respective licences.
+This means you are free to:
+
+Copy the project
+Modify it
+Redistribute it
+Create derivative works
+Use it commercially
+Use it privately
+Include it in other projects
+
+No permission is required for these uses.
+
+For the complete legal terms, see the CC0 1.0 Universal licence.
 
 ❤️ Support the Project
 
-Enjoying Into the Vortex?
-
-You can help support the project by:
+If you enjoy Into the Vortex, consider supporting the project by:
 
 ⭐ Starring the project
-📥 Downloading and playing the latest releases
+📥 Playing the latest release
 🐛 Reporting bugs
-💡 Suggesting features
-📢 Sharing the project with other Minecraft and Doctor Who fans
+💡 Sending suggestions
+📢 Sharing the project with other players
+🌀 Taking your TARDIS into the Vortex
+
+Every bit of support helps the project grow.
+
 🌌 Into the Vortex
 
-Time is waiting.
+The universe is waiting.
+
+The Vortex is calling.
 
 Where will you go?
