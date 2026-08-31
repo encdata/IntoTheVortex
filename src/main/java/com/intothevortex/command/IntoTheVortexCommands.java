@@ -75,6 +75,7 @@ public final class IntoTheVortexCommands {
             if (target.equals("interior")) {
                 if (!InteriorRegistry.registered().contains(net.minecraft.resources.Identifier.parse(value))) return 0;
                 TardisManager.switchInterior(context.getSource().getServer(), id, value);
+                TardisDimensionManager.replaceInterior(context.getSource().getServer(), id);
             } else {
                 net.minecraft.resources.Identifier exteriorId;
                 try {
