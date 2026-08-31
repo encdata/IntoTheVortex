@@ -5,6 +5,8 @@ import com.intothevortex.item.ModItems;
 import com.intothevortex.item.TardisLinking;
 import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
+import com.intothevortex.exterior.ExteriorRegistry;
+import com.intothevortex.interior.InteriorRegistry;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -24,6 +26,8 @@ public final class IntoTheVortexCommands {
 
     private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         SuggestionProvider<CommandSourceStack> tardisSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(TardisManager.ids(context.getSource().getServer()).stream().map(UUID::toString), builder);
+        SuggestionProvider<CommandSourceStack> exteriorSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(ExteriorRegistry.values().stream().map(value -> value.id().toString()), builder);
+        SuggestionProvider<CommandSourceStack> interiorSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(InteriorRegistry.registered().stream().map(Object::toString), builder);
         var root = Commands.literal("intothevortex");
         root.then(Commands.literal("key").executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -59,6 +63,33 @@ public final class IntoTheVortexCommands {
             }
             return 1;
         }))));
+        root.then(Commands.literal("change").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).then(Commands.argument("target", StringArgumentType.word()).suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(java.util.List.of("interior", "exterior"), builder)).then(Commands.argument("value", StringArgumentType.greedyString()).suggests((context, builder) -> {
+            String target = StringArgumentType.getString(context, "target");
+            return (target.equals("interior") ? interiorSuggestions : exteriorSuggestions).getSuggestions(context, builder);
+        }).executes(context -> {
+            UUID id = UUID.fromString(StringArgumentType.getString(context, "id"));
+            TardisData data = TardisManager.get(context.getSource().getServer(), id);
+            if (data == null) return 0;
+            String target = StringArgumentType.getString(context, "target").toLowerCase(java.util.Locale.ROOT);
+            String value = StringArgumentType.getString(context, "value").trim();
+            if (target.equals("interior")) {
+                if (!InteriorRegistry.registered().contains(net.minecraft.resources.Identifier.parse(value))) return 0;
+                TardisManager.switchInterior(context.getSource().getServer(), id, value);
+            } else {
+                net.minecraft.resources.Identifier exteriorId;
+                try {
+                    exteriorId = net.minecraft.resources.Identifier.parse(value);
+                } catch (IllegalArgumentException exception) {
+                    exteriorId = ExteriorRegistry.DEFAULT_ID;
+                }
+                if (ExteriorRegistry.get(exteriorId).id().equals(ExteriorRegistry.DEFAULT_ID) && !exteriorId.equals(ExteriorRegistry.DEFAULT_ID)) exteriorId = ExteriorRegistry.DEFAULT_ID;
+                TardisManager.save(context.getSource().getServer(), data.withExteriorType(exteriorId.toString()));
+                value = exteriorId.toString();
+            }
+            String changedValue = value;
+            context.getSource().sendSuccess(() -> Component.literal("TARDIS " + id + " changed " + target + " to " + changedValue), false);
+            return 1;
+        })))));
         dispatcher.register(root);
     }
 }

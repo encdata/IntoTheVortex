@@ -16,6 +16,10 @@ import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.storage.LevelResource;
 import com.intothevortex.interior.InteriorRegistry;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.util.RandomSource;
 
 public final class TardisDimensionManager {
@@ -59,17 +63,41 @@ public final class TardisDimensionManager {
     }
 
     private static boolean placeInterior(MinecraftServer server, ServerLevel level) {
-        var template = server.getStructureManager().get(Identifier.fromNamespaceAndPath("intothevortex", "type_40"));
-        if (template.isEmpty()) return false;
+        TardisData data = TardisManager.get(server, id(level.dimension()));
+        if (data == null) return false;
+        Identifier interior = Identifier.parse(data.interior());
+        StructureTemplate template;
+        try (var input = server.getResourceManager().open(new FileToIdConverter("structures", ".nbt").idToFile(interior))) {
+            CompoundTag tag = net.minecraft.nbt.NbtIo.readCompressed(input, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
+            ListTag palette = tag.getListOrEmpty("palette");
+            for (int index = 0; index < palette.size(); index++) {
+                CompoundTag state = palette.getCompoundOrEmpty(index);
+                String name = state.getStringOr("Name", "minecraft:air");
+                if (name.startsWith("ait:")) state.putString("Name", switch (name) {
+                    case "ait:door_block" -> "intothevortex:interior_door";
+                    case "ait:console" -> "intothevortex:console";
+                    case "ait:wall_monitor_block" -> "intothevortex:wall_monitor";
+                    default -> "minecraft:stone";
+                });
+                else if (!name.startsWith("minecraft:")) state.putString("Name", "minecraft:stone");
+            }
+            tag.remove("entities");
+            template = new StructureTemplate();
+            template.load(server.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK), tag);
+        } catch (java.io.IOException exception) {
+            return false;
+        }
         net.minecraft.core.BlockPos origin = new net.minecraft.core.BlockPos(0, 64, 0);
         level.getChunkAt(origin);
-        boolean placed = template.get().placeInWorld(level, origin, origin, new StructurePlaceSettings().setKnownShape(true).setIgnoreEntities(false), RandomSource.create(), 2);
+        boolean placed = template.placeInWorld(level, origin, origin, new StructurePlaceSettings().setKnownShape(true).setIgnoreEntities(false), RandomSource.create(), 2);
         level.setBlock(origin, InteriorRegistry.DOOR.defaultBlockState(), 3);
         return placed && level.getBlockState(origin).is(InteriorRegistry.DOOR);
     }
 
     public static void tick(MinecraftServer server) {
-        for (ServerLevel level : server.getAllLevels()) {
+        java.util.List<ServerLevel> levels = new java.util.ArrayList<>();
+        server.getAllLevels().forEach(levels::add);
+        for (ServerLevel level : levels) {
             UUID id = id(level.dimension());
             if (id == null) continue;
             if (level.players().isEmpty()) {

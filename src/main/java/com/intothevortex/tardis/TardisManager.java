@@ -19,6 +19,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
+import com.intothevortex.exterior.TardisAnimationManager;
+import net.minecraft.resources.Identifier;
 
 public final class TardisManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -31,6 +33,7 @@ public final class TardisManager {
                 owner.getUUID(),
                 new UUID(0L, 0L),
                 "intothevortex:default",
+                "intothevortex:70default",
                 level.dimension().identifier().toString(),
                 position,
                 owner.getYRot() + 180.0F,
@@ -48,12 +51,14 @@ public final class TardisManager {
             return tardis;
         }
         TardisExteriorEntity entity = new TardisExteriorEntity(level, tardis.id());
+        entity.setExterior(tardis.exterior());
         entity.setPos(tardis.position().getX() + 0.5, tardis.position().getY(), tardis.position().getZ() + 0.5);
         entity.setYRot(tardis.yaw());
         entity.setYHeadRot(tardis.yaw());
         level.addFreshEntity(entity);
         TardisData updated = tardis.withExterior(entity.getUUID());
         save(server, updated);
+        TardisAnimationManager.register(updated.id(), Identifier.parse(updated.exterior()));
         return updated;
     }
 
@@ -79,6 +84,15 @@ public final class TardisManager {
         }
     }
 
+    public static TardisData switchInterior(MinecraftServer server, UUID id, String interiorId) {
+        TardisData data = get(server, id);
+        if (data == null) throw new IllegalArgumentException("Unknown TARDIS " + id);
+        if (!interiorId.contains(":")) interiorId = "intothevortex:" + interiorId;
+        TardisData updated = data.withInterior(interiorId);
+        save(server, updated);
+        return updated;
+    }
+
     public static List<UUID> ids(MinecraftServer server) {
         try (Stream<Path> files = Files.list(folder(server))) {
             return files.filter(path -> path.getFileName().toString().endsWith(".json")).map(path -> path.getFileName().toString().replace(".json", "")).map(value -> { try { return UUID.fromString(value); } catch (IllegalArgumentException exception) { return null; } }).filter(java.util.Objects::nonNull).toList();
@@ -96,13 +110,13 @@ public final class TardisManager {
         return server.getWorldPath(LevelResource.ROOT).resolve("IntoTheVortex");
     }
 
-    private record StoredTardis(UUID id, UUID ownerId, UUID exteriorId, String exterior, String dimension, int x, int y, int z, float yaw, boolean locked, boolean doorOpen, boolean interiorInitialized) {
+    private record StoredTardis(UUID id, UUID ownerId, UUID exteriorId, String exterior, String interior, String dimension, int x, int y, int z, float yaw, boolean locked, boolean doorOpen, boolean interiorInitialized) {
         private static StoredTardis from(TardisData data) {
-            return new StoredTardis(data.id(), data.ownerId(), data.exteriorId(), data.exterior(), data.dimension(), data.position().getX(), data.position().getY(), data.position().getZ(), data.yaw(), data.locked(), data.doorOpen(), data.interiorInitialized());
+            return new StoredTardis(data.id(), data.ownerId(), data.exteriorId(), data.exterior(), data.interior(), data.dimension(), data.position().getX(), data.position().getY(), data.position().getZ(), data.yaw(), data.locked(), data.doorOpen(), data.interiorInitialized());
         }
 
         private TardisData toData() {
-            return new TardisData(id, ownerId, exteriorId, exterior, dimension, new BlockPos(x, y, z), yaw, locked, doorOpen, interiorInitialized);
+            return new TardisData(id, ownerId, exteriorId, exterior, interior == null ? "intothevortex:70default" : interior, dimension, new BlockPos(x, y, z), yaw, locked, doorOpen, interiorInitialized);
         }
     }
 }

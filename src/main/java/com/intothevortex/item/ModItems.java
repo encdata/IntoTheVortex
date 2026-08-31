@@ -9,11 +9,26 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 
 public final class ModItems {
     public static final Item TARDIS = register("tardis", TardisItem::new, new Item.Properties().stacksTo(1));
     public static final Item TARDIS_KEY = register("tardis_key", TardisKeyItem::new, new Item.Properties());
+    public static final ResourceKey<CreativeModeTab> TAB_KEY = ResourceKey.create(Registries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "main"));
+    public static final CreativeModeTab TAB = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, TAB_KEY, CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
+            .title(Component.translatable("itemGroup.intothevortex.main"))
+            .icon(() -> new ItemStack(TARDIS))
+            .displayItems((parameters, output) -> {
+                output.accept(TARDIS);
+                output.accept(TARDIS_KEY);
+                output.accept(com.intothevortex.interior.InteriorRegistry.DOOR_ITEM);
+                output.accept(com.intothevortex.interior.InteriorRegistry.CONSOLE_ITEM);
+                output.accept(com.intothevortex.interior.InteriorRegistry.WALL_MONITOR_ITEM);
+            })
+            .build());
 
     private ModItems() {
     }
@@ -24,7 +39,5 @@ public final class ModItems {
     }
 
     public static void initialize() {
-        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> entries.accept(TARDIS));
-        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> entries.accept(TARDIS_KEY));
     }
 }

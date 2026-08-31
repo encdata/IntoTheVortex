@@ -15,6 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import com.intothevortex.item.ModItems;
 import com.intothevortex.item.TardisLinking;
+import com.intothevortex.interior.InteriorDoorBlock;
+import com.intothevortex.tardis.TardisAccessRegistry;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -27,6 +29,8 @@ import net.minecraft.world.phys.AABB;
 
 public final class TardisExteriorEntity extends Entity {
     private static final EntityDataAccessor<Boolean> DOOR_OPEN = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Float> DOOR_PROGRESS = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<String> EXTERIOR = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
     private UUID tardisId = new UUID(0L, 0L);
     private final Set<UUID> playersInDoorway = new HashSet<>();
 
@@ -47,9 +51,17 @@ public final class TardisExteriorEntity extends Entity {
         return entityData.get(DOOR_OPEN);
     }
 
+    public float getDoorProgress() { return entityData.get(DOOR_PROGRESS); }
+
+    public String getExterior() { return entityData.get(EXTERIOR); }
+
+    public void setExterior(String exterior) { entityData.set(EXTERIOR, exterior); }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DOOR_OPEN, false);
+        builder.define(DOOR_PROGRESS, 0.0F);
+        builder.define(EXTERIOR, "intothevortex:default");
     }
 
     @Override
@@ -72,6 +84,10 @@ public final class TardisExteriorEntity extends Entity {
             return InteractionResult.FAIL;
         }
         boolean owner = tardis.ownerId().equals(serverPlayer.getUUID());
+        if (!TardisAccessRegistry.canUse(tardisId, serverPlayer.getUUID(), tardis.ownerId())) {
+            serverPlayer.sendSystemMessage(Component.literal("You are not authorized to use this TARDIS."));
+            return InteractionResult.FAIL;
+        }
         if (serverPlayer.getItemInHand(hand).is(ModItems.TARDIS_KEY)) {
             if (!owner) return InteractionResult.FAIL;
             UUID linked = TardisLinking.get(serverPlayer.getItemInHand(hand));
@@ -79,6 +95,7 @@ public final class TardisExteriorEntity extends Entity {
             TardisData updated = tardis.withLocked(!tardis.locked()).withDoorOpen(false);
             TardisManager.save(serverPlayer.level().getServer(), updated);
             entityData.set(DOOR_OPEN, false);
+            InteriorDoorBlock.syncState((ServerLevel) serverPlayer.level(), tardisId, false);
             return InteractionResult.SUCCESS;
         }
         if (serverPlayer.isShiftKeyDown()) {
@@ -89,6 +106,7 @@ public final class TardisExteriorEntity extends Entity {
             TardisData updated = tardis.withLocked(!tardis.locked()).withDoorOpen(tardis.locked() ? tardis.doorOpen() : false);
             TardisManager.save(serverPlayer.level().getServer(), updated);
             entityData.set(DOOR_OPEN, updated.doorOpen());
+            InteriorDoorBlock.syncState((ServerLevel) serverPlayer.level(), tardisId, updated.doorOpen());
             serverPlayer.sendSystemMessage(Component.literal(updated.locked() ? "The TARDIS is locked." : "The TARDIS is unlocked."));
             return InteractionResult.SUCCESS;
         }
@@ -99,16 +117,21 @@ public final class TardisExteriorEntity extends Entity {
         TardisData updated = tardis.withDoorOpen(!tardis.doorOpen());
         TardisManager.save(serverPlayer.level().getServer(), updated);
         entityData.set(DOOR_OPEN, updated.doorOpen());
+        InteriorDoorBlock.syncState((ServerLevel) serverPlayer.level(), tardisId, updated.doorOpen());
         return InteractionResult.SUCCESS;
     }
 
     @Override
     public void tick() {
         super.tick();
+        float progress = getDoorProgress();
+        float target = isDoorOpen() ? 1.0F : 0.0F;
+        entityData.set(DOOR_PROGRESS, progress + (target - progress) * 0.18F);
         if (!(level() instanceof ServerLevel serverLevel)) {
             return;
         }
         TardisData tardis = TardisManager.get(serverLevel.getServer(), tardisId);
+        if (tardis != null) entityData.set(EXTERIOR, tardis.exterior());
         boolean open = tardis != null && tardis.doorOpen() && !tardis.locked();
         entityData.set(DOOR_OPEN, open);
         if (!open) {
@@ -118,11 +141,24 @@ public final class TardisExteriorEntity extends Entity {
         Set<UUID> present = new HashSet<>();
         for (ServerPlayer player : serverLevel.getEntitiesOfClass(ServerPlayer.class, doorArea())) {
             present.add(player.getUUID());
+            TardisData accessData = TardisManager.get(serverLevel.getServer(), tardisId);
+            if (accessData == null || !TardisAccessRegistry.canUse(tardisId, player.getUUID(), accessData.ownerId())) continue;
             if (playersInDoorway.add(player.getUUID())) {
-                ServerLevel interior = TardisDimensionManager.ensureLoaded(serverLevel.getServer(), tardisId);
+                TardisDimensionManager.ensureLoaded(serverLevel.getServer(), tardisId);
+                ServerLevel registered = serverLevel.getServer().getLevel(TardisDimensionManager.key(tardisId));
+                if (registered == null) {
+                    playersInDoorway.remove(player.getUUID());
+                    continue;
+                }
+                float arrivalYaw = getYRot();
                 serverLevel.getServer().execute(() -> {
-                    ServerLevel registered = serverLevel.getServer().getLevel(TardisDimensionManager.key(tardisId));
-                    if (registered != null) player.teleport(new net.minecraft.world.level.portal.TeleportTransition(registered, new net.minecraft.world.phys.Vec3(0.5D, 64D, 0.5D), net.minecraft.world.phys.Vec3.ZERO, getYRot(), 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+                    if (player.isRemoved() || player.level() != serverLevel) return;
+                    ServerLevel targetLevel = serverLevel.getServer().getLevel(TardisDimensionManager.key(tardisId));
+                    if (targetLevel == null) {
+                        playersInDoorway.remove(player.getUUID());
+                        return;
+                    }
+                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, new net.minecraft.world.phys.Vec3(0.5D, 64D, 0.5D), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
                 });
             }
         }

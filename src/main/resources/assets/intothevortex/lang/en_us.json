@@ -1,4 +1,12 @@
 {
   "item.intothevortex.tardis": "TARDIS",
-  "entity.intothevortex.tardis_exterior": "TARDIS"
+  "entity.intothevortex.tardis_exterior": "TARDIS",
+  "block.intothevortex.interior_door": "Interior Door",
+  "block.intothevortex.console": "TARDIS Console",
+  "block.intothevortex.wall_monitor": "Wall Monitor",
+  "item.intothevortex.tardis_key": "TARDIS Key",
+  "item.intothevortex.interior_door": "Interior Door",
+  "item.intothevortex.console": "TARDIS Console",
+  "item.intothevortex.wall_monitor": "Wall Monitor",
+  "itemGroup.intothevortex.main": "Into The Vortex"
 }
