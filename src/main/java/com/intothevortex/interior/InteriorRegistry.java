@@ -30,6 +30,20 @@ public final class InteriorRegistry {
     }
     public static void initialize() {
         register("intothevortex:70default");
+        register("intothevortex:cavernwood");
+        register("intothevortex:classic_neon");
+        register("intothevortex:coppercoral");
+        register("intothevortex:darkrock");
+        register("intothevortex:missy");
+        register("intothevortex:ravencrest");
+        register("intothevortex:rosewood");
+        register("intothevortex:second");
+        register("intothevortex:second_alt");
+        register("intothevortex:sprucewood");
+        register("intothevortex:third");
+        register("intothevortex:third_alt");
+        register("intothevortex:toywardian");
+        register("intothevortex:trenzaloremissy");
     }
     public static void register(String id) { register(id, id); }
     public static void register(String id, String model) {
