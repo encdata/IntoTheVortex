@@ -8,5 +8,18 @@
   "item.intothevortex.interior_door": "Interior Door",
   "item.intothevortex.console": "TARDIS Console",
   "item.intothevortex.wall_monitor": "Wall Monitor",
-  "itemGroup.intothevortex.main": "Into The Vortex"
+  "itemGroup.intothevortex.main": "Into The Vortex",
+
+
+  "block.intothevortex.grate_block": "Grate Block",
+  "block.intothevortex.rusty_grate_block": "Rusty Grate Block",
+  "block.intothevortex.thick_grate_block": "Thick Grate Block",
+  "block.intothevortex.rusty_thick_grate_block": "Rusty Thick Grate Block",
+
+  "block.intothevortex.hartnell_a": "Hartnell A",
+  "block.intothevortex.hartnell_b": "Hartnell B",
+  "block.intothevortex.hartnell_c": "Hartnell C",
+
+  "block.intothevortex.ecat": "Ecat",
+  "block.intothevortex.good_heavens": "Good Heavens"
 }

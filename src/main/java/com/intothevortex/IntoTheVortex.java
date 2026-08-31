@@ -14,6 +14,7 @@ import com.intothevortex.interior.InteriorRegistry;
 import com.intothevortex.item.ModItems;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.intothevortex.block.ModBlocks;
 
 public final class IntoTheVortex implements ModInitializer {
     public static final String MOD_ID = "intothevortex";
@@ -24,8 +25,11 @@ public final class IntoTheVortex implements ModInitializer {
         ModEntityTypes.initialize();
         InteriorRegistry.initialize();
         IntoTheVortexCommands.initialize();
+        ModBlocks.initialize();
 
         ModItems.initialize();
+        ModBlocks.initialize();
+
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             java.util.UUID tardisId = ServerPlayerMixin.intothevortex$consumePendingDimension(handler.getPlayer().getUUID());
