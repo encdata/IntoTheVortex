@@ -11,6 +11,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.storage.LevelResource;
@@ -114,6 +115,39 @@ public final class TardisDimensionManager {
         ((TardisDimensionServer) server).intothevortex$removeLevel(key(id));
         try { level.getChunkSource().close(); } catch (java.io.IOException exception) { throw new IllegalStateException("Unable to close TARDIS dimension " + id, exception); }
         EMPTY_TICKS.remove(id);
+    }
+
+    public static boolean replaceInterior(MinecraftServer server, UUID id) {
+        TardisData data = TardisManager.get(server, id);
+        if (data == null) return false;
+        ServerLevel level = server.getLevel(key(id));
+        ServerLevel exterior = server.getLevel(parseDimension(data.dimension()));
+        if (level != null) {
+            if (exterior == null) return false;
+            java.util.List<ServerPlayer> players = new java.util.ArrayList<>(level.players());
+            for (ServerPlayer player : players) {
+                var pos = data.position().getCenter();
+                player.teleport(new net.minecraft.world.level.portal.TeleportTransition(exterior, new net.minecraft.world.phys.Vec3(pos.x, pos.y, pos.z + 1.8D), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+            }
+            java.util.List<net.minecraft.world.entity.Entity> entities = new java.util.ArrayList<>();
+            level.getAllEntities().forEach(entities::add);
+            for (var entity : entities) {
+                if (!(entity instanceof ServerPlayer)) entity.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+            }
+            level.save(null, true, false);
+            ((TardisDimensionServer) server).intothevortex$removeLevel(key(id));
+            try { level.getChunkSource().close(); } catch (java.io.IOException exception) { throw new IllegalStateException("Unable to close TARDIS dimension " + id, exception); }
+        }
+        try {
+            java.nio.file.Path dimensionPath = ((TardisDimensionServer) server).intothevortex$storageSource().getDimensionPath(key(id));
+            if (java.nio.file.Files.exists(dimensionPath)) java.nio.file.Files.walk(dimensionPath).sorted(java.util.Comparator.reverseOrder()).forEach(path -> { try { java.nio.file.Files.deleteIfExists(path); } catch (java.io.IOException exception) { throw new java.io.UncheckedIOException(exception); } });
+            TardisManager.save(server, data.withInteriorInitialized(false));
+            EMPTY_TICKS.remove(id);
+            ensureLoaded(server, id);
+            return true;
+        } catch (java.io.IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+        }
     }
 
     public static boolean delete(MinecraftServer server, UUID id) {
