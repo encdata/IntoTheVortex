@@ -40,6 +40,7 @@ public final class InteriorDoorBlock extends Block {
 
     @Override protected void entityInside(BlockState state, Level level, net.minecraft.core.BlockPos pos, Entity entity, net.minecraft.world.entity.InsideBlockEffectApplier effects, boolean moving) {
         if (!(level instanceof ServerLevel world) || !(entity instanceof ServerPlayer player)) return;
+        if (!moving) return;
         Long cooldown = ARRIVAL_COOLDOWNS.get(player.getUUID());
         if (cooldown != null) {
             if (world.getGameTime() < cooldown) return;
