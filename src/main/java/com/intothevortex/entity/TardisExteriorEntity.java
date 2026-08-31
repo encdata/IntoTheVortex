@@ -17,6 +17,8 @@ import com.intothevortex.item.ModItems;
 import com.intothevortex.item.TardisLinking;
 import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.tardis.TardisAccessRegistry;
+import com.intothevortex.network.RuntimeDimensionPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -158,7 +160,9 @@ public final class TardisExteriorEntity extends Entity {
                         playersInDoorway.remove(player.getUUID());
                         return;
                     }
-                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, new net.minecraft.world.phys.Vec3(0.5D, 64D, 0.5D), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+                    InteriorDoorBlock.markArrival(player);
+                    ServerPlayNetworking.send(player, new RuntimeDimensionPayload(TardisDimensionManager.key(tardisId).identifier()));
+                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, new net.minecraft.world.phys.Vec3(0.5D, 64D, 2.0D), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
                 });
             }
         }

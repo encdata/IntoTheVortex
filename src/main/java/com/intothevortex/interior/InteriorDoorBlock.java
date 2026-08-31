@@ -17,6 +17,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public final class InteriorDoorBlock extends Block {
     public static final net.minecraft.world.level.block.state.properties.BooleanProperty OPEN = BlockStateProperties.OPEN;
+    private static final java.util.Map<java.util.UUID, Long> ARRIVAL_COOLDOWNS = new java.util.HashMap<>();
 
     public InteriorDoorBlock(BlockBehaviour.Properties properties) { super(properties.noCollision().noOcclusion().strength(-1.0F, 3600000.0F)); }
 
@@ -28,6 +29,10 @@ public final class InteriorDoorBlock extends Block {
         }
     }
 
+    public static void markArrival(ServerPlayer player) {
+        ARRIVAL_COOLDOWNS.put(player.getUUID(), ((ServerLevel) player.level()).getGameTime() + 20L);
+    }
+
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(OPEN);
     }
@@ -35,6 +40,11 @@ public final class InteriorDoorBlock extends Block {
 
     @Override protected void entityInside(BlockState state, Level level, net.minecraft.core.BlockPos pos, Entity entity, net.minecraft.world.entity.InsideBlockEffectApplier effects, boolean moving) {
         if (!(level instanceof ServerLevel world) || !(entity instanceof ServerPlayer player)) return;
+        Long cooldown = ARRIVAL_COOLDOWNS.get(player.getUUID());
+        if (cooldown != null) {
+            if (world.getGameTime() < cooldown) return;
+            ARRIVAL_COOLDOWNS.remove(player.getUUID());
+        }
         java.util.UUID id = TardisDimensionManager.id(world.dimension());
         if (id == null) return;
         TardisData data = TardisManager.get(world.getServer(), id);

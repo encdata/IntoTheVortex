@@ -1,6 +1,8 @@
 package com.intothevortex;
 
 import com.intothevortex.command.IntoTheVortexCommands;
+import com.intothevortex.network.RuntimeDimensionPayload;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import com.intothevortex.dimension.TardisDimensionManager;
 import com.intothevortex.entity.ModEntityTypes;
 import com.intothevortex.exterior.ExteriorRegistry;
@@ -20,6 +22,7 @@ public final class IntoTheVortex implements ModInitializer {
         IntoTheVortexCommands.initialize();
 
         ModItems.initialize();
+        PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
 
         ServerTickEvents.END_SERVER_TICK.register(TardisDimensionManager::tick);
     }
