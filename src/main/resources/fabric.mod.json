@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "intothevortex",
+	"version": "${version}",
+	"name": "IntoTheVortex",
+	"authors": [
+		"EncData",
+		"Lt-DO7",
+		"Hozom"
+	],
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.intothevortex.IntoTheVortex"
+		],
+		"client": [
+			"com.intothevortex.client.IntoTheVortexClient"
+		]
+	},
+	"mixins": [
+		"intothevortex.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

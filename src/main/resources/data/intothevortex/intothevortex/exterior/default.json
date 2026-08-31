@@ -1,0 +1,8 @@
+{
+  "id": "intothevortex:default",
+  "model": "intothevortex:exterior/police_box",
+  "texture": "intothevortex:textures/entity/exterior/default.png",
+  "width": 1.2,
+  "height": 2.8,
+  "door_offset": [0.0, 0.0, -0.6]
+}
