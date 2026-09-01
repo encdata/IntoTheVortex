@@ -1,6 +1,7 @@
 package com.intothevortex.mixin;
 
 import com.intothevortex.dimension.TardisDimensionManager;
+import com.intothevortex.dimension.RuntimeDimensionRestoration;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.ValueInput;
@@ -13,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin {
-    private static final java.util.Map<java.util.UUID, java.util.UUID> PENDING_DIMENSIONS = new java.util.HashMap<>();
     @Shadow private MinecraftServer server;
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     private void intothevortex$restoreRuntimeDimension(ValueInput input, CallbackInfo info) {
@@ -22,10 +22,6 @@ public abstract class ServerPlayerMixin {
         ServerPlayer player = (ServerPlayer) (Object) this;
         java.util.UUID id = TardisDimensionManager.id(TardisDimensionManager.parseDimension(dimension));
         if (id == null) return;
-        PENDING_DIMENSIONS.put(player.getUUID(), id);
-    }
-
-    public static java.util.UUID intothevortex$consumePendingDimension(java.util.UUID playerId) {
-        return PENDING_DIMENSIONS.remove(playerId);
+        RuntimeDimensionRestoration.queue(player.getUUID(), id);
     }
 }

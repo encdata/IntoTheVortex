@@ -4,7 +4,7 @@ import com.intothevortex.command.IntoTheVortexCommands;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import com.intothevortex.mixin.ServerPlayerMixin;
+import com.intothevortex.dimension.RuntimeDimensionRestoration;
 import com.intothevortex.dimension.TardisDimensionManager;
 import net.minecraft.world.level.portal.TeleportTransition;
 import com.intothevortex.dimension.TardisDimensionManager;
@@ -32,7 +32,7 @@ public final class IntoTheVortex implements ModInitializer {
 
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            java.util.UUID tardisId = ServerPlayerMixin.intothevortex$consumePendingDimension(handler.getPlayer().getUUID());
+            java.util.UUID tardisId = RuntimeDimensionRestoration.consume(handler.getPlayer().getUUID());
             if (tardisId == null) return;
             server.execute(() -> {
                 var level = TardisDimensionManager.ensureLoaded(server, tardisId);
