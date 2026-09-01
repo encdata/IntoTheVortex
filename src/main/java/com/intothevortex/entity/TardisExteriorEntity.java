@@ -19,6 +19,9 @@ import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.tardis.TardisAccessRegistry;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.intothevortex.sound.ModSounds;
+import com.intothevortex.tardis.DoorEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -30,6 +33,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 
 public final class TardisExteriorEntity extends Entity {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("IntoTheVortex/TardisEntry");
     private static final EntityDataAccessor<Boolean> DOOR_OPEN = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DOOR_PROGRESS = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<String> EXTERIOR = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
@@ -96,6 +100,8 @@ public final class TardisExteriorEntity extends Entity {
             if (linked != null && !linked.equals(tardisId)) return InteractionResult.FAIL;
             TardisData updated = tardis.withLocked(!tardis.locked()).withDoorOpen(false);
             TardisManager.save(serverPlayer.level().getServer(), updated);
+            DoorEvents.fire(updated, false);
+            playDoorSound(serverPlayer.level().getServer(), updated.locked() ? ModSounds.KEY_LOCK : ModSounds.KEY_UNLOCK);
             entityData.set(DOOR_OPEN, false);
             InteriorDoorBlock.syncState((ServerLevel) serverPlayer.level(), tardisId, false);
             return InteractionResult.SUCCESS;
@@ -107,6 +113,8 @@ public final class TardisExteriorEntity extends Entity {
             }
             TardisData updated = tardis.withLocked(!tardis.locked()).withDoorOpen(tardis.locked() ? tardis.doorOpen() : false);
             TardisManager.save(serverPlayer.level().getServer(), updated);
+            DoorEvents.fire(updated, updated.doorOpen());
+            playDoorSound(serverPlayer.level().getServer(), updated.locked() ? ModSounds.KEY_LOCK : ModSounds.KEY_UNLOCK);
             entityData.set(DOOR_OPEN, updated.doorOpen());
             InteriorDoorBlock.syncState((ServerLevel) serverPlayer.level(), tardisId, updated.doorOpen());
             serverPlayer.sendSystemMessage(Component.literal(updated.locked() ? "The TARDIS is locked." : "The TARDIS is unlocked."));
@@ -118,9 +126,20 @@ public final class TardisExteriorEntity extends Entity {
         }
         TardisData updated = tardis.withDoorOpen(!tardis.doorOpen());
         TardisManager.save(serverPlayer.level().getServer(), updated);
+        DoorEvents.fire(updated, updated.doorOpen());
+        playDoorSound(serverPlayer.level().getServer(), updated.doorOpen() ? ModSounds.DOOR_OPEN : ModSounds.DOOR_CLOSE);
         entityData.set(DOOR_OPEN, updated.doorOpen());
         InteriorDoorBlock.syncState((ServerLevel) serverPlayer.level(), tardisId, updated.doorOpen());
         return InteractionResult.SUCCESS;
+    }
+
+    private void playDoorSound(net.minecraft.server.MinecraftServer server, net.minecraft.sounds.SoundEvent sound) {
+        level().playSound(null, blockPosition(), sound, SoundSource.BLOCKS, 0.8F, 1.0F);
+        ServerLevel interior = TardisDimensionManager.ensureLoaded(server, tardisId);
+        if (interior != null) {
+            net.minecraft.core.BlockPos door = TardisDimensionManager.interiorDoor(interior);
+            if (door != null) interior.playSound(null, door, sound, SoundSource.BLOCKS, 0.8F, 1.0F);
+        }
     }
 
     @Override
@@ -146,25 +165,22 @@ public final class TardisExteriorEntity extends Entity {
             TardisData accessData = TardisManager.get(serverLevel.getServer(), tardisId);
             if (accessData == null || !TardisAccessRegistry.canUse(tardisId, player.getUUID(), accessData.ownerId())) continue;
             if (playersInDoorway.add(player.getUUID())) {
-                TardisDimensionManager.ensureLoaded(serverLevel.getServer(), tardisId);
-                ServerLevel registered = serverLevel.getServer().getLevel(TardisDimensionManager.key(tardisId));
-                if (registered == null) {
-                    playersInDoorway.remove(player.getUUID());
-                    continue;
-                }
                 float arrivalYaw = getYRot();
-                serverLevel.getServer().execute(() -> {
-                    if (player.isRemoved() || player.level() != serverLevel) return;
-                    ServerLevel targetLevel = serverLevel.getServer().getLevel(TardisDimensionManager.key(tardisId));
-                    if (targetLevel == null) {
+                LOGGER.info("Queued exterior entry for {} into TARDIS {}", player.getGameProfile().name(), tardisId);
+                TardisDimensionManager.whenInteriorReady(serverLevel.getServer(), tardisId, targetLevel -> {
+                    TardisData readyData = TardisManager.get(serverLevel.getServer(), tardisId);
+                    if (player.isRemoved() || player.connection == null || readyData == null || readyData.locked() || !readyData.doorOpen() || !TardisAccessRegistry.canUse(tardisId, player.getUUID(), readyData.ownerId())) {
+                        LOGGER.info("Cancelled exterior entry for {} into TARDIS {}", player.getGameProfile().name(), tardisId);
                         playersInDoorway.remove(player.getUUID());
                         return;
                     }
                     net.minecraft.core.BlockPos doorPos = TardisDimensionManager.interiorDoor(targetLevel);
                     if (doorPos == null) {
+                        LOGGER.info("Interior doorway was unavailable for TARDIS {}", tardisId);
                         playersInDoorway.remove(player.getUUID());
                         return;
                     }
+                    LOGGER.info("Teleporting {} into TARDIS {} at {}", player.getGameProfile().name(), tardisId, doorPos);
                     InteriorDoorBlock.markArrival(player);
                     ServerPlayNetworking.send(player, new RuntimeDimensionPayload(TardisDimensionManager.key(tardisId).identifier()));
                     player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, TardisDimensionManager.interiorArrival(targetLevel, doorPos), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));

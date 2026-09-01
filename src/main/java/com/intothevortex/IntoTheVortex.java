@@ -15,12 +15,14 @@ import com.intothevortex.item.ModItems;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import com.intothevortex.block.ModBlocks;
+import com.intothevortex.sound.ModSounds;
 
 public final class IntoTheVortex implements ModInitializer {
     public static final String MOD_ID = "intothevortex";
 
     @Override
     public void onInitialize() {
+        ModSounds.initialize();
         ExteriorRegistry.initialize();
         ModEntityTypes.initialize();
         InteriorRegistry.initialize();

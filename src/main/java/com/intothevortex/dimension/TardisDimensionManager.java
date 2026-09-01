@@ -24,7 +24,10 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.util.RandomSource;
 
 public final class TardisDimensionManager {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("IntoTheVortex/TardisDimension");
     private static final Map<UUID, Integer> EMPTY_TICKS = new ConcurrentHashMap<>();
+    private static final Map<UUID, java.util.List<java.util.function.Consumer<ServerLevel>>> INTERIOR_READY_CALLBACKS = new ConcurrentHashMap<>();
+    private static final net.minecraft.core.BlockPos INTERIOR_ORIGIN = new net.minecraft.core.BlockPos(0, 64, 0);
     private TardisDimensionManager() {}
 
     public static ResourceKey<Level> key(UUID id) {
@@ -40,6 +43,7 @@ public final class TardisDimensionManager {
         ServerLevel existing = server.getLevel(key);
         if (existing != null) {
             EMPTY_TICKS.remove(id);
+            initializeRegistered(server, existing);
             return existing;
         }
         ServerLevel overworld = server.overworld();
@@ -48,6 +52,8 @@ public final class TardisDimensionManager {
         try {
             var access = ((TardisDimensionServer) server).intothevortex$storageSource();
             ServerLevel level = new ServerLevel(server, java.util.concurrent.ForkJoinPool.commonPool(), access, server.getWorldData().overworldData(), key, stem, false, id.getMostSignificantBits(), new ArrayList<>(), false);
+            level.getChunkSource().setViewDistance(server.getPlayerList().getViewDistance());
+            level.getChunkSource().setSimulationDistance(server.getPlayerList().getSimulationDistance());
             ((TardisDimensionServer) server).intothevortex$queueLevel(level);
             EMPTY_TICKS.remove(id);
             return level;
@@ -60,10 +66,53 @@ public final class TardisDimensionManager {
         UUID id = id(level.dimension());
         if (id == null) return;
         TardisData data = TardisManager.get(server, id);
-        if (data != null && !data.interiorInitialized() && placeInterior(server, level)) TardisManager.save(server, data.withInteriorInitialized(true));
+        if (data == null) return;
+        if (!data.interiorInitialized() || !hasInterior(level)) {
+            if (!placeInterior(server, level)) return;
+            net.minecraft.core.BlockPos door = findInteriorDoor(level);
+            if (door == null) {
+                ensureDoorMarker(level, INTERIOR_ORIGIN);
+                door = INTERIOR_ORIGIN;
+            }
+            data = data.withInteriorDoor(door).withInteriorInitialized(true);
+            TardisManager.save(server, data);
+        }
+        completeInteriorReady(id, level);
     }
 
     public static net.minecraft.core.BlockPos interiorDoor(ServerLevel level) {
+        UUID id = id(level.dimension());
+        TardisData data = id == null ? null : TardisManager.get(level.getServer(), id);
+        return data == null || !data.interiorInitialized() ? null : findInteriorDoor(level);
+    }
+
+    public static void whenInteriorReady(MinecraftServer server, UUID id, java.util.function.Consumer<ServerLevel> callback) {
+        ServerLevel level = ensureLoaded(server, id);
+        if (level != null && interiorDoor(level) != null) {
+            callback.accept(level);
+            return;
+        }
+        INTERIOR_READY_CALLBACKS.computeIfAbsent(id, ignored -> new ArrayList<>()).add(callback);
+    }
+
+    private static void completeInteriorReady(UUID id, ServerLevel level) {
+        java.util.List<java.util.function.Consumer<ServerLevel>> callbacks = INTERIOR_READY_CALLBACKS.remove(id);
+        if (callbacks != null) callbacks.forEach(callback -> callback.accept(level));
+    }
+
+    private static boolean hasInterior(ServerLevel level) {
+        int nonAir = 0;
+        for (int x = 0; x < 30; x++) {
+            for (int y = 0; y < 9; y++) {
+                for (int z = 0; z < 24; z++) {
+                    if (!level.getBlockState(INTERIOR_ORIGIN.offset(x, y, z)).isAir() && ++nonAir >= 128) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static net.minecraft.core.BlockPos findInteriorDoor(ServerLevel level) {
         for (int x = -32; x <= 32; x++) {
             for (int y = 0; y <= 128; y++) {
                 for (int z = -32; z <= 32; z++) {
@@ -74,6 +123,11 @@ public final class TardisDimensionManager {
         }
         return null;
     }
+
+    private static void ensureDoorMarker(ServerLevel level, net.minecraft.core.BlockPos pos) {
+        level.setBlock(pos, InteriorRegistry.DOOR.defaultBlockState().setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, net.minecraft.core.Direction.SOUTH), 3);
+    }
+
 
     public static net.minecraft.world.phys.Vec3 interiorArrival(ServerLevel level, net.minecraft.core.BlockPos door) {
         net.minecraft.core.Direction direction = level.getBlockState(door).getValue(com.intothevortex.interior.InteriorDoorBlock.FACING);
@@ -105,19 +159,15 @@ public final class TardisDimensionManager {
         } catch (java.io.IOException exception) {
             return false;
         }
-        net.minecraft.core.BlockPos origin = new net.minecraft.core.BlockPos(0, 64, 0);
+        net.minecraft.core.BlockPos origin = INTERIOR_ORIGIN;
         level.getChunkAt(origin);
         boolean placed = template.placeInWorld(level, origin, origin, new StructurePlaceSettings().setKnownShape(true).setIgnoreEntities(false), RandomSource.create(), 2);
-        if (!placed) return false;
-        net.minecraft.core.Vec3i size = template.getSize();
-        for (int x = 0; x < size.getX(); x++) {
-            for (int y = 0; y < size.getY(); y++) {
-                for (int z = 0; z < size.getZ(); z++) {
-                    if (level.getBlockState(origin.offset(x, y, z)).is(InteriorRegistry.DOOR)) return true;
-                }
-            }
-        }
-        return false;
+        if (!placed || !hasInterior(level)) return false;
+        net.minecraft.core.BlockPos placedDoor = findInteriorDoor(level);
+        LOGGER.info("Placed converted interior for TARDIS {} in {}. Door={}", id(level.dimension()), level.dimension().identifier(), placedDoor);
+        if (placedDoor != null) return true;
+        ensureDoorMarker(level, origin);
+        return true;
     }
 
     public static void tick(MinecraftServer server) {
@@ -138,8 +188,9 @@ public final class TardisDimensionManager {
         if (level == null || !level.players().isEmpty()) return;
         level.save(null, true, false);
         ((TardisDimensionServer) server).intothevortex$removeLevel(key(id));
-        try { level.getChunkSource().close(); } catch (java.io.IOException exception) { throw new IllegalStateException("Unable to close TARDIS dimension " + id, exception); }
+        try { level.close(); } catch (java.io.IOException exception) { throw new IllegalStateException("Unable to close TARDIS dimension " + id, exception); }
         EMPTY_TICKS.remove(id);
+        INTERIOR_READY_CALLBACKS.remove(id);
     }
 
     public static boolean replaceInterior(MinecraftServer server, UUID id) {
@@ -161,13 +212,14 @@ public final class TardisDimensionManager {
             }
             level.save(null, true, false);
             ((TardisDimensionServer) server).intothevortex$removeLevel(key(id));
-            try { level.getChunkSource().close(); } catch (java.io.IOException exception) { throw new IllegalStateException("Unable to close TARDIS dimension " + id, exception); }
+            try { level.close(); } catch (java.io.IOException exception) { throw new IllegalStateException("Unable to close TARDIS dimension " + id, exception); }
         }
         try {
             java.nio.file.Path dimensionPath = ((TardisDimensionServer) server).intothevortex$storageSource().getDimensionPath(key(id));
             if (java.nio.file.Files.exists(dimensionPath)) java.nio.file.Files.walk(dimensionPath).sorted(java.util.Comparator.reverseOrder()).forEach(path -> { try { java.nio.file.Files.deleteIfExists(path); } catch (java.io.IOException exception) { throw new java.io.UncheckedIOException(exception); } });
             TardisManager.save(server, data.withInteriorInitialized(false));
             EMPTY_TICKS.remove(id);
+            INTERIOR_READY_CALLBACKS.remove(id);
             ensureLoaded(server, id);
             return true;
         } catch (java.io.IOException exception) {
@@ -184,6 +236,7 @@ public final class TardisDimensionManager {
             if (java.nio.file.Files.exists(dimensionPath)) java.nio.file.Files.walk(dimensionPath).sorted(java.util.Comparator.reverseOrder()).forEach(path -> { try { java.nio.file.Files.deleteIfExists(path); } catch (java.io.IOException exception) { throw new java.io.UncheckedIOException(exception); } });
             java.nio.file.Files.deleteIfExists(server.getWorldPath(LevelResource.ROOT).resolve("IntoTheVortex").resolve(id + ".json"));
             EMPTY_TICKS.remove(id);
+            INTERIOR_READY_CALLBACKS.remove(id);
             return true;
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to delete TARDIS dimension " + id, exception);

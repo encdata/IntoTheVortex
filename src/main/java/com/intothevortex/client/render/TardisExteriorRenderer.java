@@ -29,7 +29,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
     @Override
     public void extractRenderState(TardisExteriorEntity entity, TardisExteriorRenderState state, float tickDelta) {
         super.extractRenderState(entity, state, tickDelta);
-        state.yaw = entity.getYRot();
+        state.yaw = entity.getYRot(tickDelta);
         state.doorOpen = entity.isDoorOpen();
         state.doorProgress = entity.getDoorProgress();
         state.tardisId = entity.getTardisId();
