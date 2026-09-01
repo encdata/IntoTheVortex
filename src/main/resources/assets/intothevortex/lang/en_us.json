@@ -8,8 +8,10 @@
   "item.intothevortex.interior_door": "Interior Door",
   "item.intothevortex.console": "TARDIS Console",
   "item.intothevortex.wall_monitor": "Wall Monitor",
-  "itemGroup.intothevortex.main": "Into The Vortex",
 
+  "itemGroup.intothevortex.main": "Into The Vortex",
+  "itemGroup.intothevortex.roundels": "Into The Vortex: Roundels",
+  "itemGroup.intothevortex.decorative": "Into The Vortex: Decorative",
 
   "block.intothevortex.grate_block": "Grate Block",
   "block.intothevortex.rusty_grate_block": "Rusty Grate Block",

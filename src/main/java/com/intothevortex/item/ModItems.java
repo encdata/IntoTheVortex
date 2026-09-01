@@ -6,6 +6,7 @@ import com.intothevortex.block.ModBlocks;
 import java.util.function.Function;
 
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -82,49 +83,65 @@ public final class ModItems {
             );
 
     public static final CreativeModeTab TAB =
-            Registry.register(
-                    BuiltInRegistries.CREATIVE_MODE_TAB,
-                    TAB_KEY,
-                    CreativeModeTab.builder(
-                                    CreativeModeTab.Row.TOP,
-                                    0
-                            )
-                            .title(Component.translatable(
-                                    "itemGroup.intothevortex.main"
-                            ))
-                            .icon(() -> new ItemStack(TARDIS))
-                            .displayItems((parameters, output) -> {
+            FabricCreativeModeTab.builder()
+                    .icon(() -> new ItemStack(TARDIS))
+                    .title(Component.translatable(
+                            "itemGroup.intothevortex.main"
+                    ))
+                    .displayItems((parameters, output) -> {
 
-                                output.accept(TARDIS);
-                                output.accept(TARDIS_KEY);
+                        // TARDIS
+                        output.accept(TARDIS);
+                        output.accept(TARDIS_KEY);
 
-                                // Grates
-                                output.accept(GRATE_BLOCK);
-                                output.accept(RUSTY_GRATE_BLOCK);
-                                output.accept(THICK_GRATE_BLOCK);
-                                output.accept(RUSTY_THICK_GRATE_BLOCK);
+                        // Meme blocks
+                        output.accept(ECAT);
+                        output.accept(GOOD_HEAVENS);
 
-                                // Hartnell
-                                output.accept(HARTNELL_ROUNDEL);
-                                output.accept(HARTNELL_WALL);
+                        // Existing interior items
+                        output.accept(
+                                com.intothevortex.interior.InteriorRegistry.DOOR_ITEM
+                        );
+                        output.accept(
+                                com.intothevortex.interior.InteriorRegistry.CONSOLE_ITEM
+                        );
+                        output.accept(
+                                com.intothevortex.interior.InteriorRegistry.WALL_MONITOR_ITEM
+                        );
+                    })
+                    .build();
 
-                                // Meme blocks
-                                output.accept(ECAT);
-                                output.accept(GOOD_HEAVENS);
+    public static final CreativeModeTab ROUNDELS_TAB =
+            FabricCreativeModeTab.builder()
+                    .icon(() -> new ItemStack(HARTNELL_ROUNDEL))
+                    .title(Component.translatable(
+                            "itemGroup.intothevortex.roundels"
+                    ))
+                    .displayItems((parameters, output) -> {
 
-                                // Existing interior items
-                                output.accept(
-                                        com.intothevortex.interior.InteriorRegistry.DOOR_ITEM
-                                );
-                                output.accept(
-                                        com.intothevortex.interior.InteriorRegistry.CONSOLE_ITEM
-                                );
-                                output.accept(
-                                        com.intothevortex.interior.InteriorRegistry.WALL_MONITOR_ITEM
-                                );
-                            })
-                            .build()
-            );
+                        // Hartnell
+                        output.accept(HARTNELL_ROUNDEL);
+                        output.accept(HARTNELL_WALL);
+                    })
+                    .build();
+
+    public static final CreativeModeTab DECORATIVE_TAB =
+            FabricCreativeModeTab.builder()
+                    .icon(() -> new ItemStack(GRATE_BLOCK))
+                    .title(Component.translatable(
+                            "itemGroup.intothevortex.decorative"
+                    ))
+                    .displayItems((parameters, output) -> {
+
+                        // Grates
+                        output.accept(GRATE_BLOCK);
+                        output.accept(RUSTY_GRATE_BLOCK);
+                        output.accept(THICK_GRATE_BLOCK);
+                        output.accept(RUSTY_THICK_GRATE_BLOCK);
+                    })
+                    .build();
+
+
 
     private ModItems() {
     }
