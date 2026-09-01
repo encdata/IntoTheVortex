@@ -52,19 +52,14 @@ public final class ModItems {
             ModBlocks.RUSTY_THICK_GRATE_BLOCK
     );
 
-    public static final Item HARTNELL_A = registerBlock(
-            "hartnell_a",
-            ModBlocks.HARTNELL_A
+    public static final Item HARTNELL_ROUNDEL = registerBlock(
+            "hartnell_roundel",
+            ModBlocks.HARTNELL_ROUNDEL
     );
 
-    public static final Item HARTNELL_B = registerBlock(
-            "hartnell_b",
-            ModBlocks.HARTNELL_B
-    );
-
-    public static final Item HARTNELL_C = registerBlock(
-            "hartnell_c",
-            ModBlocks.HARTNELL_C
+    public static final Item HARTNELL_WALL = registerBlock(
+            "hartnell_wall",
+            ModBlocks.HARTNELL_WALL
     );
 
     public static final Item ECAT = registerBlock(
@@ -110,9 +105,8 @@ public final class ModItems {
                                 output.accept(RUSTY_THICK_GRATE_BLOCK);
 
                                 // Hartnell
-                                output.accept(HARTNELL_A);
-                                output.accept(HARTNELL_B);
-                                output.accept(HARTNELL_C);
+                                output.accept(HARTNELL_ROUNDEL);
+                                output.accept(HARTNELL_WALL);
 
                                 // Meme blocks
                                 output.accept(ECAT);

@@ -34,20 +34,14 @@ public final class ModBlocks {
             BlockBehaviour.Properties.of()
     );
 
-    public static final Block HARTNELL_A = register(
-            ModBlockIds.HARTNELL_A,
+    public static final Block HARTNELL_ROUNDEL = register(
+            ModBlockIds.HARTNELL_ROUNDEL,
             Block::new,
             BlockBehaviour.Properties.of()
     );
 
-    public static final Block HARTNELL_B = register(
-            ModBlockIds.HARTNELL_B,
-            Block::new,
-            BlockBehaviour.Properties.of()
-    );
-
-    public static final Block HARTNELL_C = register(
-            ModBlockIds.HARTNELL_C,
+    public static final Block HARTNELL_WALL = register(
+            ModBlockIds.HARTNELL_WALL,
             Block::new,
             BlockBehaviour.Properties.of()
     );

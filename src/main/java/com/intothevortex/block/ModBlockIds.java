@@ -20,9 +20,8 @@ public final class ModBlockIds {
     public static final ResourceKey<Block> THICK_GRATE_BLOCK = create("thick_grate_block");
     public static final ResourceKey<Block> RUSTY_THICK_GRATE_BLOCK = create("rusty_thick_grate_block");
 
-    public static final ResourceKey<Block> HARTNELL_A = create("hartnell_a");
-    public static final ResourceKey<Block> HARTNELL_B = create("hartnell_b");
-    public static final ResourceKey<Block> HARTNELL_C = create("hartnell_c");
+    public static final ResourceKey<Block> HARTNELL_ROUNDEL = create("hartnell_roundel");
+    public static final ResourceKey<Block> HARTNELL_WALL = create("hartnell_wall");
 
     public static final ResourceKey<Block> ECAT = create("ecat");
     public static final ResourceKey<Block> GOOD_HEAVENS = create("good_heavens");
