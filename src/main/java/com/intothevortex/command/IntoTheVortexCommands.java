@@ -29,12 +29,6 @@ public final class IntoTheVortexCommands {
         SuggestionProvider<CommandSourceStack> exteriorSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(ExteriorRegistry.values().stream().map(value -> value.id().toString()), builder);
         SuggestionProvider<CommandSourceStack> interiorSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(InteriorRegistry.registered().stream().map(Object::toString), builder);
         var root = Commands.literal("intothevortex");
-        root.then(Commands.literal("key").executes(context -> {
-            ServerPlayer player = context.getSource().getPlayerOrException();
-            player.getInventory().placeItemBackInInventory(new ItemStack(ModItems.TARDIS_KEY));
-            context.getSource().sendSuccess(() -> Component.literal("TARDIS key given."), false);
-            return 1;
-        }));
         root.then(Commands.literal("link").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
             UUID id = UUID.fromString(StringArgumentType.getString(context, "id"));
@@ -43,7 +37,7 @@ public final class IntoTheVortexCommands {
             context.getSource().sendSuccess(() -> Component.literal("TARDIS key linked to " + id), false);
             return 1;
         })));
-        root.then(Commands.literal("tp").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).then(Commands.argument("target", StringArgumentType.word()).suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(java.util.List.of("interior", "exterior"), builder)).executes(context -> {
+        var teleportCommand = Commands.literal("teleport").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).then(Commands.argument("target", StringArgumentType.word()).suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(java.util.List.of("interior", "exterior"), builder)).executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
             UUID id = UUID.fromString(StringArgumentType.getString(context, "id"));
             TardisData data = TardisManager.get(context.getSource().getServer(), id);
@@ -59,10 +53,14 @@ public final class IntoTheVortexCommands {
                 context.getSource().getServer().execute(() -> player.teleport(new TeleportTransition(targetLevel, destination, net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING)));
             } else {
                 var targetLevel = level;
-                context.getSource().getServer().execute(() -> player.teleport(new TeleportTransition(targetLevel, new net.minecraft.world.phys.Vec3(0.5D, 65D, 0.5D), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING)));
+                context.getSource().getServer().execute(() -> {
+                    var door = TardisDimensionManager.interiorDoor(targetLevel);
+                    if (door != null) player.teleport(new TeleportTransition(targetLevel, TardisDimensionManager.interiorArrival(targetLevel, door), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING));
+                });
             }
             return 1;
-        }))));
+        })));
+        root.then(teleportCommand);
         root.then(Commands.literal("change").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).then(Commands.argument("target", StringArgumentType.word()).suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(java.util.List.of("interior", "exterior"), builder)).then(Commands.argument("value", StringArgumentType.greedyString()).suggests((context, builder) -> {
             String target = StringArgumentType.getString(context, "target");
             return (target.equals("interior") ? interiorSuggestions : exteriorSuggestions).getSuggestions(context, builder);

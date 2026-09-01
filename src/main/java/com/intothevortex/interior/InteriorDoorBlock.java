@@ -9,17 +9,24 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public final class InteriorDoorBlock extends Block {
+public final class InteriorDoorBlock extends Block implements EntityBlock {
     public static final net.minecraft.world.level.block.state.properties.BooleanProperty OPEN = BlockStateProperties.OPEN;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final java.util.Map<java.util.UUID, Long> ARRIVAL_COOLDOWNS = new java.util.HashMap<>();
 
-    public InteriorDoorBlock(BlockBehaviour.Properties properties) { super(properties.noCollision().noOcclusion().strength(-1.0F, 3600000.0F)); }
+    public InteriorDoorBlock(BlockBehaviour.Properties properties) { super(properties.noCollision().noOcclusion().strength(-1.0F, 3600000.0F)); registerDefaultState(stateDefinition.any().setValue(OPEN, false).setValue(FACING, Direction.NORTH)); }
+
+    @Override public BlockEntity newBlockEntity(net.minecraft.core.BlockPos pos, BlockState state) { return new InteriorDoorBlockEntity(pos, state); }
 
 
     public static void syncState(ServerLevel exteriorWorld, java.util.UUID id, boolean open) {
@@ -34,8 +41,9 @@ public final class InteriorDoorBlock extends Block {
     }
 
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(OPEN);
+        builder.add(OPEN, FACING);
     }
+
 
 
     @Override protected void entityInside(BlockState state, Level level, net.minecraft.core.BlockPos pos, Entity entity, net.minecraft.world.entity.InsideBlockEffectApplier effects, boolean moving) {

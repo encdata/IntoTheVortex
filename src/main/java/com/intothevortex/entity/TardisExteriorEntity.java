@@ -160,9 +160,14 @@ public final class TardisExteriorEntity extends Entity {
                         playersInDoorway.remove(player.getUUID());
                         return;
                     }
+                    net.minecraft.core.BlockPos doorPos = TardisDimensionManager.interiorDoor(targetLevel);
+                    if (doorPos == null) {
+                        playersInDoorway.remove(player.getUUID());
+                        return;
+                    }
                     InteriorDoorBlock.markArrival(player);
                     ServerPlayNetworking.send(player, new RuntimeDimensionPayload(TardisDimensionManager.key(tardisId).identifier()));
-                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, new net.minecraft.world.phys.Vec3(0.5D, 64D, 4.0D), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, TardisDimensionManager.interiorArrival(targetLevel, doorPos), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
                 });
             }
         }

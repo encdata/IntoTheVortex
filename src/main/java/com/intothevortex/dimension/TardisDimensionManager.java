@@ -63,6 +63,23 @@ public final class TardisDimensionManager {
         if (data != null && !data.interiorInitialized() && placeInterior(server, level)) TardisManager.save(server, data.withInteriorInitialized(true));
     }
 
+    public static net.minecraft.core.BlockPos interiorDoor(ServerLevel level) {
+        for (int x = -32; x <= 32; x++) {
+            for (int y = 0; y <= 128; y++) {
+                for (int z = -32; z <= 32; z++) {
+                    net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
+                    if (level.getBlockState(pos).is(InteriorRegistry.DOOR)) return pos;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static net.minecraft.world.phys.Vec3 interiorArrival(ServerLevel level, net.minecraft.core.BlockPos door) {
+        net.minecraft.core.Direction direction = level.getBlockState(door).getValue(com.intothevortex.interior.InteriorDoorBlock.FACING);
+        return new net.minecraft.world.phys.Vec3(door.getX() + 0.5D + direction.getStepX() * 1.2D, door.getY(), door.getZ() + 0.5D + direction.getStepZ() * 1.2D);
+    }
+
     private static boolean placeInterior(MinecraftServer server, ServerLevel level) {
         TardisData data = TardisManager.get(server, id(level.dimension()));
         if (data == null) return false;
@@ -91,8 +108,16 @@ public final class TardisDimensionManager {
         net.minecraft.core.BlockPos origin = new net.minecraft.core.BlockPos(0, 64, 0);
         level.getChunkAt(origin);
         boolean placed = template.placeInWorld(level, origin, origin, new StructurePlaceSettings().setKnownShape(true).setIgnoreEntities(false), RandomSource.create(), 2);
-        level.setBlock(origin, InteriorRegistry.DOOR.defaultBlockState(), 3);
-        return placed && level.getBlockState(origin).is(InteriorRegistry.DOOR);
+        if (!placed) return false;
+        net.minecraft.core.Vec3i size = template.getSize();
+        for (int x = 0; x < size.getX(); x++) {
+            for (int y = 0; y < size.getY(); y++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    if (level.getBlockState(origin.offset(x, y, z)).is(InteriorRegistry.DOOR)) return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static void tick(MinecraftServer server) {
