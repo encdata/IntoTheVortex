@@ -77,6 +77,13 @@ public final class TardisDimensionManager {
             data = data.withInteriorDoor(door).withInteriorInitialized(true);
             TardisManager.save(server, data);
         }
+        net.minecraft.core.BlockPos interiorDoor = findInteriorDoor(level);
+        if (interiorDoor != null && level.getBlockState(interiorDoor).is(InteriorRegistry.DOOR)) {
+            com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, interiorDoor);
+            boolean open = data.doorOpen() && !data.locked();
+            if (level.getBlockState(interiorDoor).getValue(com.intothevortex.interior.InteriorDoorBlock.OPEN) != open) level.setBlock(interiorDoor, level.getBlockState(interiorDoor).setValue(com.intothevortex.interior.InteriorDoorBlock.OPEN, open), 3);
+        }
+        com.intothevortex.interior.InteriorDoorBlock.syncExterior(level, id);
         completeInteriorReady(id, level);
     }
 
@@ -126,6 +133,7 @@ public final class TardisDimensionManager {
 
     private static void ensureDoorMarker(ServerLevel level, net.minecraft.core.BlockPos pos) {
         level.setBlock(pos, InteriorRegistry.DOOR.defaultBlockState().setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, net.minecraft.core.Direction.SOUTH), 3);
+        com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, pos);
     }
 
 
@@ -165,7 +173,10 @@ public final class TardisDimensionManager {
         if (!placed || !hasInterior(level)) return false;
         net.minecraft.core.BlockPos placedDoor = findInteriorDoor(level);
         LOGGER.info("Placed converted interior for TARDIS {} in {}. Door={}", id(level.dimension()), level.dimension().identifier(), placedDoor);
-        if (placedDoor != null) return true;
+        if (placedDoor != null) {
+            com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, placedDoor);
+            return true;
+        }
         ensureDoorMarker(level, origin);
         return true;
     }

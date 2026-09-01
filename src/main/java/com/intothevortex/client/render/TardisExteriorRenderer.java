@@ -10,14 +10,16 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.model.Model;
 import net.minecraft.resources.Identifier;
+import java.util.HashMap;
+import java.util.Map;
 
 public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorEntity, TardisExteriorRenderState> {
-    private final PoliceBoxModel model;
+    private final Map<Identifier, Model<TardisExteriorRenderState>> models = new HashMap<>();
 
     public TardisExteriorRenderer(EntityRendererProvider.Context context) {
         super(context);
-        model = new PoliceBoxModel(PoliceBoxModel.createBodyLayer().bakeRoot());
         shadowRadius = 0.8F;
     }
 
@@ -44,6 +46,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         poseStack.scale(1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.5F, 0.0F);
         var definition = ExteriorRegistry.get(Identifier.parse(state.exterior));
+        var model = models.computeIfAbsent(definition.model(), TardisModelRegistry::exterior);
         collector.submitModel(model, state, poseStack, definition.texture(), state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, (ModelFeatureRenderer.CrumblingOverlay) null);
         if (definition.emission() != null) {
             collector.submitModel(model, state, poseStack, definition.emission(), 15728880, OverlayTexture.NO_OVERLAY, state.outlineColor, (ModelFeatureRenderer.CrumblingOverlay) null);

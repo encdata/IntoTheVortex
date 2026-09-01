@@ -16,9 +16,11 @@ public final class InteriorRegistry {
     private static final Set<Identifier> INTERIORS = new HashSet<>();
     private static final java.util.Map<Identifier, InteriorDefinition> DEFINITIONS = new java.util.HashMap<>();
     private static final ResourceKey<Block> DOOR_KEY = ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "interior_door"));
+    private static final ResourceKey<Block> DOOR_TOP_KEY = ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "interior_door_top"));
     private static final ResourceKey<Block> CONSOLE_KEY = ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "console"));
     private static final ResourceKey<Block> WALL_MONITOR_KEY = ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "wall_monitor"));
     public static final Block DOOR = Registry.register(BuiltInRegistries.BLOCK, DOOR_KEY, new InteriorDoorBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().setId(DOOR_KEY)));
+    public static final Block DOOR_TOP = Registry.register(BuiltInRegistries.BLOCK, DOOR_TOP_KEY, new InteriorDoorTopBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().setId(DOOR_TOP_KEY)));
     public static final Block CONSOLE = Registry.register(BuiltInRegistries.BLOCK, CONSOLE_KEY, new InteriorPropBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().setId(CONSOLE_KEY), true));
     public static final Block WALL_MONITOR = Registry.register(BuiltInRegistries.BLOCK, WALL_MONITOR_KEY, new InteriorPropBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().setId(WALL_MONITOR_KEY)));
     public static final BlockEntityType<InteriorDoorBlockEntity> DOOR_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "interior_door")), createDoorEntity());

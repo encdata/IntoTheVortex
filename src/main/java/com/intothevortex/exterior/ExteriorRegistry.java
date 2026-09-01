@@ -32,6 +32,7 @@ public final class ExteriorRegistry {
                 DEFAULT_ID,
                 Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "exterior/police_box"),
                 Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/entity/exterior/policebox_coral.png"),
+                Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/entity/exterior/policebox_coral_emission.png"),
                 1.2F,
                 2.8F,
                 0.0F,

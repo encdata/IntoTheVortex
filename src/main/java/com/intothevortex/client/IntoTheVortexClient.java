@@ -1,7 +1,11 @@
 package com.intothevortex.client;
 
 import com.intothevortex.client.render.TardisExteriorRenderer;
+import com.intothevortex.client.render.InteriorDoorRenderer;
+import com.intothevortex.client.render.TardisModelRegistry;
 import com.intothevortex.entity.ModEntityTypes;
+import com.intothevortex.interior.InteriorRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import com.intothevortex.network.RuntimeDimensionPayload;
@@ -13,7 +17,9 @@ import net.minecraft.world.level.Level;
 public final class IntoTheVortexClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        TardisModelRegistry.initialize();
         EntityRenderers.register(ModEntityTypes.TARDIS_EXTERIOR, TardisExteriorRenderer::new);
+        BlockEntityRendererRegistry.register(InteriorRegistry.DOOR_ENTITY, context -> new InteriorDoorRenderer());
         ClientPlayNetworking.registerGlobalReceiver(RuntimeDimensionPayload.TYPE, (payload, context) -> context.client().execute(() -> {
             if (context.client().getConnection() != null) {
                 context.client().getConnection().levels().add(ResourceKey.create(Registries.DIMENSION, payload.id()));

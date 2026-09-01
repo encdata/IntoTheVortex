@@ -165,7 +165,7 @@ public final class TardisExteriorEntity extends Entity {
             TardisData accessData = TardisManager.get(serverLevel.getServer(), tardisId);
             if (accessData == null || !TardisAccessRegistry.canUse(tardisId, player.getUUID(), accessData.ownerId())) continue;
             if (playersInDoorway.add(player.getUUID())) {
-                float arrivalYaw = getYRot();
+                float arrivalYaw = net.minecraft.util.Mth.wrapDegrees(getYRot() + 180.0F);
                 LOGGER.info("Queued exterior entry for {} into TARDIS {}", player.getGameProfile().name(), tardisId);
                 TardisDimensionManager.whenInteriorReady(serverLevel.getServer(), tardisId, targetLevel -> {
                     TardisData readyData = TardisManager.get(serverLevel.getServer(), tardisId);

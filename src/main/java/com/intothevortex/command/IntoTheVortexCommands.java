@@ -100,6 +100,8 @@ public final class IntoTheVortexCommands {
                 }
                 if (ExteriorRegistry.get(exteriorId).id().equals(ExteriorRegistry.DEFAULT_ID) && !exteriorId.equals(ExteriorRegistry.DEFAULT_ID)) exteriorId = ExteriorRegistry.DEFAULT_ID;
                 TardisManager.save(context.getSource().getServer(), data.withExteriorType(exteriorId.toString()));
+                var interiorLevel = TardisDimensionManager.ensureLoaded(context.getSource().getServer(), id);
+                if (interiorLevel != null) com.intothevortex.interior.InteriorDoorBlock.syncExterior(interiorLevel, id);
                 value = exteriorId.toString();
             }
             String changedValue = value;
