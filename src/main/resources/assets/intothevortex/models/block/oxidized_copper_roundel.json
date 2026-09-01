@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/roundel/oxidized_copper_roundel",
+    "up": "intothevortex:block/roundel/oxidized_copper_roundel",
+    "north": "intothevortex:block/roundel/oxidized_copper_roundel",
+    "east": "intothevortex:block/roundel/oxidized_copper_roundel_half",
+    "south": "intothevortex:block/roundel/oxidized_copper_roundel",
+    "west": "intothevortex:block/roundel/oxidized_copper_roundel_half",
+    "particle": "intothevortex:block/roundel/oxidized_copper_roundel"
+  },
+  "render_type": "solid"
+}

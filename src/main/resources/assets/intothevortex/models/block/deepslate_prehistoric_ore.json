@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore",
+    "up": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore",
+    "north": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore",
+    "east": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore",
+    "south": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore",
+    "west": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore",
+    "particle": "intothevortex:block/prehistoric_dim/deepslate_prehistoric_ore"
+  },
+  "render_type": "solid"
+}

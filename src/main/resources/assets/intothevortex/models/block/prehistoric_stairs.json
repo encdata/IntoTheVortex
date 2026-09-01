@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "top": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "side": "intothevortex:block/prehistoric_dim/prehistoric_planks"
+  }
+}

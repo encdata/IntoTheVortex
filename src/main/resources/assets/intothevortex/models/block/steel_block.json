@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/mondas/steel_block",
+    "up": "intothevortex:block/mondas/steel_block",
+    "north": "intothevortex:block/mondas/steel_block",
+    "east": "intothevortex:block/mondas/steel_block",
+    "south": "intothevortex:block/mondas/steel_block",
+    "west": "intothevortex:block/mondas/steel_block",
+    "particle": "intothevortex:block/mondas/steel_block"
+  },
+  "render_type": "solid"
+}

@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/skaro/deepslate_dalekanium_ore",
+    "up": "intothevortex:block/skaro/deepslate_dalekanium_ore",
+    "north": "intothevortex:block/skaro/deepslate_dalekanium_ore",
+    "east": "intothevortex:block/skaro/deepslate_dalekanium_ore",
+    "south": "intothevortex:block/skaro/deepslate_dalekanium_ore",
+    "west": "intothevortex:block/skaro/deepslate_dalekanium_ore",
+    "particle": "intothevortex:block/skaro/deepslate_dalekanium_ore"
+  },
+  "render_type": "solid"
+}

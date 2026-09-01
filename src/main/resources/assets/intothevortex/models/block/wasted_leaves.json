@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "intothevortex:block/skaro/wasted_leaves",
+    "particle": "intothevortex:block/skaro/wasted_leaves"
+  },
+  "render_type": "cutout"
+}

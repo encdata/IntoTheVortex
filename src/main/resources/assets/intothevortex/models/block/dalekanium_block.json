@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/skaro/dalekanium_block",
+    "up": "intothevortex:block/skaro/dalekanium_block",
+    "north": "intothevortex:block/skaro/dalekanium_block",
+    "east": "intothevortex:block/skaro/dalekanium_block",
+    "south": "intothevortex:block/skaro/dalekanium_block",
+    "west": "intothevortex:block/skaro/dalekanium_block",
+    "particle": "intothevortex:block/skaro/dalekanium_block"
+  },
+  "render_type": "solid"
+}

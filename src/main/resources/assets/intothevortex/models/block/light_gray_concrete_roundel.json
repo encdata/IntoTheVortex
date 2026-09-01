@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/roundel/light_gray_concrete_roundel_full",
+    "up": "intothevortex:block/roundel/light_gray_concrete_roundel_full",
+    "north": "intothevortex:block/roundel/light_gray_concrete_roundel_full",
+    "east": "intothevortex:block/roundel/light_gray_concrete_roundel_half",
+    "south": "intothevortex:block/roundel/light_gray_concrete_roundel_full",
+    "west": "intothevortex:block/roundel/light_gray_concrete_roundel_half",
+    "particle": "intothevortex:block/roundel/light_gray_concrete_roundel_full"
+  },
+  "render_type": "solid"
+}

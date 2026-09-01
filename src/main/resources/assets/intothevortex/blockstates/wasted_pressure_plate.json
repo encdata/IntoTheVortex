@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "intothevortex:block/wasted_pressure_plate"
+    },
+    "powered=true": {
+      "model": "intothevortex:block/wasted_pressure_plate_down"
+    }
+  }
+}

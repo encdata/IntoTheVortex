@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/skaro/wasted_log_top",
+    "up": "intothevortex:block/skaro/wasted_log_top",
+    "north": "intothevortex:block/skaro/wasted_log",
+    "east": "intothevortex:block/skaro/wasted_log",
+    "south": "intothevortex:block/skaro/wasted_log",
+    "west": "intothevortex:block/skaro/wasted_log",
+    "particle": "intothevortex:block/skaro/wasted_log_top"
+  },
+  "render_type": "solid"
+}

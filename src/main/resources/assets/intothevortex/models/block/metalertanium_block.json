@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/skaro/metalertanium_block",
+    "up": "intothevortex:block/skaro/metalertanium_block",
+    "north": "intothevortex:block/skaro/metalertanium_block",
+    "east": "intothevortex:block/skaro/metalertanium_block",
+    "south": "intothevortex:block/skaro/metalertanium_block",
+    "west": "intothevortex:block/skaro/metalertanium_block",
+    "particle": "intothevortex:block/skaro/metalertanium_block"
+  },
+  "render_type": "solid"
+}

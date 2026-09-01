@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/atrium/atrium_ore",
+    "up": "intothevortex:block/atrium/atrium_ore",
+    "north": "intothevortex:block/atrium/atrium_ore",
+    "east": "intothevortex:block/atrium/atrium_ore",
+    "south": "intothevortex:block/atrium/atrium_ore",
+    "west": "intothevortex:block/atrium/atrium_ore",
+    "particle": "intothevortex:block/atrium/atrium_ore"
+  },
+  "render_type": "solid"
+}

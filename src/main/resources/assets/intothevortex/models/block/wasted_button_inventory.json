@@ -1,0 +1,7 @@
+{
+  "parent": "block/button_inventory",
+  "textures": {
+    "texture": "intothevortex:block/skaro/wasted_planks"
+  },
+  "render_type": "solid"
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "intothevortex:block/wasted_plank_slab"
+    },
+    "type=top": {
+      "model": "intothevortex:block/wasted_plank_slab_top"
+    },
+    "type=double": {
+      "model": "intothevortex:block/wasted_plank_slab_full"
+    }
+  }
+}

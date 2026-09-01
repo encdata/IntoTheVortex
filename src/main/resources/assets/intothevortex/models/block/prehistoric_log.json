@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "intothevortex:block/prehistoric_dim/prehistoric_log_top",
+    "side": "intothevortex:block/prehistoric_dim/prehistoric_log"
+  }
+}

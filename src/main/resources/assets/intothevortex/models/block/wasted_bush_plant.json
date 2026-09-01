@@ -1,0 +1,10 @@
+{
+  "parent": "intothevortex:custom/model",
+  "textures": {
+    "all": "intothevortex:block/skaro/shrub2",
+    "particle": "intothevortex:block/skaro/shrub2",
+    "0": "intothevortex:block/skaro/shrub2",
+    "missing": "intothevortex:block/skaro/shrub2"
+  },
+  "render_type": "cutout"
+}

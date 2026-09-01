@@ -1,0 +1,9 @@
+{
+  "parent": "block/cube_bottom_top",
+  "textures": {
+    "bottom": "intothevortex:block/skaro/wasted_planks",
+    "top": "intothevortex:block/skaro/wasted_planks",
+    "side": "intothevortex:block/skaro/wasted_planks"
+  },
+  "render_type": "solid"
+}

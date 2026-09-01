@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/prehistoric_dim/prehistoric_block",
+    "up": "intothevortex:block/prehistoric_dim/prehistoric_block",
+    "north": "intothevortex:block/prehistoric_dim/prehistoric_block",
+    "east": "intothevortex:block/prehistoric_dim/prehistoric_block",
+    "south": "intothevortex:block/prehistoric_dim/prehistoric_block",
+    "west": "intothevortex:block/prehistoric_dim/prehistoric_block",
+    "particle": "intothevortex:block/prehistoric_dim/prehistoric_block"
+  },
+  "render_type": "solid"
+}

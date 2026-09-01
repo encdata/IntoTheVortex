@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "intothevortex:block/skaro/stone",
+    "particle": "intothevortex:block/skaro/stone"
+  },
+  "render_type": "solid"
+}

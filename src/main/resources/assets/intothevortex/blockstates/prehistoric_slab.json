@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=double": { "model": "intothevortex:block/prehistoric_planks" },
+    "type=bottom": { "model": "intothevortex:block/prehistoric_slab" },
+    "type=top": { "model": "intothevortex:block/prehistoric_slab", "x": 180 }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/roundel/hartnell_c",
+    "up": "intothevortex:block/roundel/hartnell_c",
+    "north": "intothevortex:block/roundel/hartnell_a",
+    "east": "intothevortex:block/roundel/hartnell_b",
+    "south": "intothevortex:block/roundel/hartnell_a",
+    "west": "intothevortex:block/roundel/hartnell_b",
+    "particle": "intothevortex:block/roundel/hartnell_c"
+  },
+  "render_type": "solid"
+}

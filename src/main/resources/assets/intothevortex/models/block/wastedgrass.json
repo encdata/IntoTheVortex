@@ -1,0 +1,11 @@
+{
+  "parent": "block/grass_block",
+  "textures": {
+    "bottom": "intothevortex:block/skaro/wasted_dirt",
+    "top": "intothevortex:block/skaro/grass_block_top",
+    "side": "intothevortex:block/skaro/wasted_grass_block_side",
+    "overlay": "intothevortex:block/skaro/wasted_grass_block_side",
+    "particle": "intothevortex:block/skaro/wasted_dirt"
+  },
+  "render_type": "cutout_mipped"
+}

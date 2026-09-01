@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "aintothevortexwt:block/roundel/moss_roundel",
+    "up": "intothevortex:block/roundel/moss_roundel",
+    "north": "intothevortex:block/roundel/moss_roundel",
+    "east": "intothevortex:block/roundel/moss_roundel_half",
+    "south": "intothevortex:block/roundel/moss_roundel",
+    "west": "intothevortex:block/roundel/moss_roundel_half",
+    "particle": "intothevortex:block/roundel/moss_roundel"
+  },
+  "render_type": "solid"
+}

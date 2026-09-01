@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "up": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "north": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "east": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "south": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "west": "intothevortex:block/prehistoric_dim/prehistoric_planks",
+    "particle": "intothevortex:block/prehistoric_dim/prehistoric_planks"
+  },
+  "render_type": "solid"
+}
