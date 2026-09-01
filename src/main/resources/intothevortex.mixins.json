@@ -7,6 +7,9 @@
     "MinecraftServerMixin",
     "ServerPlayerMixin"
   ],
+  "client": [
+    "client.SkyRendererMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
