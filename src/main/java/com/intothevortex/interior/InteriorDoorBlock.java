@@ -94,7 +94,7 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
             TardisManager.save(level.getServer(), updated);
             DoorEvents.fire(updated, false);
             syncState((ServerLevel) level, id, false);
-            level.playSound(null, pos, updated.locked() ? ModSounds.KEY_LOCK : ModSounds.KEY_UNLOCK, SoundSource.BLOCKS, 0.8F, 1.0F);
+            playDoorSound(level, pos, updated.locked() ? ModSounds.KEY_LOCK : ModSounds.KEY_UNLOCK);
             return InteractionResult.SUCCESS;
         }
         if (data.locked()) return InteractionResult.FAIL;
@@ -103,8 +103,13 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         TardisManager.save(level.getServer(), updated);
         DoorEvents.fire(updated, open);
         syncState((ServerLevel) level, id, open);
-        level.playSound(null, pos, open ? ModSounds.DOOR_OPEN : ModSounds.DOOR_CLOSE, SoundSource.BLOCKS, 0.8F, 1.0F);
+        playDoorSound(level, pos, open ? ModSounds.DOOR_OPEN : ModSounds.DOOR_CLOSE);
         return InteractionResult.SUCCESS;
+    }
+
+    private static void playDoorSound(Level level, net.minecraft.core.BlockPos pos, net.minecraft.sounds.SoundEvent sound) {
+        net.minecraft.core.BlockPos lower = level.getBlockState(pos).is(InteriorRegistry.DOOR_TOP) ? pos.below() : pos;
+        if (level.getBlockState(lower).is(InteriorRegistry.DOOR)) level.playSound(null, lower, sound, SoundSource.BLOCKS, 0.8F, 1.0F);
     }
 
     public static void markArrival(ServerPlayer player) {
