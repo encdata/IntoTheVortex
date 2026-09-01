@@ -36,6 +36,8 @@ public final class TardisManager {
                 "intothevortex:70default",
                 level.dimension().identifier().toString(),
                 position,
+                new BlockPos(0, 64, 0),
+                false,
                 owner.getYRot() + 180.0F,
                 false,
                 false,
@@ -110,13 +112,14 @@ public final class TardisManager {
         return server.getWorldPath(LevelResource.ROOT).resolve("IntoTheVortex");
     }
 
-    private record StoredTardis(UUID id, UUID ownerId, UUID exteriorId, String exterior, String interior, String dimension, int x, int y, int z, float yaw, boolean locked, boolean doorOpen, boolean interiorInitialized) {
+    private record StoredTardis(UUID id, UUID ownerId, UUID exteriorId, String exterior, String interior, String dimension, int x, int y, int z, int interiorDoorX, int interiorDoorY, int interiorDoorZ, boolean interiorDoorStored, float yaw, boolean locked, boolean doorOpen, boolean interiorInitialized) {
         private static StoredTardis from(TardisData data) {
-            return new StoredTardis(data.id(), data.ownerId(), data.exteriorId(), data.exterior(), data.interior(), data.dimension(), data.position().getX(), data.position().getY(), data.position().getZ(), data.yaw(), data.locked(), data.doorOpen(), data.interiorInitialized());
+            return new StoredTardis(data.id(), data.ownerId(), data.exteriorId(), data.exterior(), data.interior(), data.dimension(), data.position().getX(), data.position().getY(), data.position().getZ(), data.interiorDoor().getX(), data.interiorDoor().getY(), data.interiorDoor().getZ(), data.interiorDoorStored(), data.yaw(), data.locked(), data.doorOpen(), data.interiorInitialized());
         }
 
         private TardisData toData() {
-            return new TardisData(id, ownerId, exteriorId, exterior, interior == null ? "intothevortex:70default" : interior, dimension, new BlockPos(x, y, z), yaw, locked, doorOpen, interiorInitialized);
+            BlockPos door = interiorDoorY == 0 ? new BlockPos(0, 64, 0) : new BlockPos(interiorDoorX, interiorDoorY, interiorDoorZ);
+            return new TardisData(id, ownerId, exteriorId, exterior, interior == null ? "intothevortex:70default" : interior, dimension, new BlockPos(x, y, z), door, interiorDoorStored, yaw, locked, doorOpen, interiorInitialized);
         }
     }
 }

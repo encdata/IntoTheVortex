@@ -17,6 +17,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.portal.TeleportTransition;
+import com.intothevortex.network.RuntimeDimensionPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import java.util.UUID;
 
 public final class IntoTheVortexCommands {
@@ -33,7 +35,8 @@ public final class IntoTheVortexCommands {
             ServerPlayer player = context.getSource().getPlayerOrException();
             UUID id = UUID.fromString(StringArgumentType.getString(context, "id"));
             if (TardisManager.get(context.getSource().getServer(), id) == null) return 0;
-            TardisLinking.link(player.getMainHandItem(), id);
+            if (!(player.getMainHandItem().getItem() instanceof com.intothevortex.item.LinkableItem linkable)) return 0;
+            linkable.link(player.getMainHandItem(), id);
             context.getSource().sendSuccess(() -> Component.literal("TARDIS key linked to " + id), false);
             return 1;
         })));
@@ -41,21 +44,35 @@ public final class IntoTheVortexCommands {
             ServerPlayer player = context.getSource().getPlayerOrException();
             UUID id = UUID.fromString(StringArgumentType.getString(context, "id"));
             TardisData data = TardisManager.get(context.getSource().getServer(), id);
-            if (data == null) return 0;
+            if (data == null) { context.getSource().sendFailure(Component.literal("Unknown TARDIS: " + id)); return 0; }
             var level = TardisDimensionManager.ensureLoaded(context.getSource().getServer(), id);
             String target = StringArgumentType.getString(context, "target");
             if (target.equals("exterior")) {
                 level = context.getSource().getServer().getLevel(TardisDimensionManager.parseDimension(data.dimension()));
-                if (level == null) return 0;
+                if (level == null) { context.getSource().sendFailure(Component.literal("Exterior dimension is not loaded.")); return 0; }
                 var pos = data.position().getCenter();
                 var destination = new net.minecraft.world.phys.Vec3(pos.x + 0.5D, pos.y, pos.z + 1.8D);
                 var targetLevel = level;
-                context.getSource().getServer().execute(() -> player.teleport(new TeleportTransition(targetLevel, destination, net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING)));
-            } else {
-                var targetLevel = level;
                 context.getSource().getServer().execute(() -> {
-                    var door = TardisDimensionManager.interiorDoor(targetLevel);
-                    if (door != null) player.teleport(new TeleportTransition(targetLevel, TardisDimensionManager.interiorArrival(targetLevel, door), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING));
+                    if (player.connection != null) player.teleport(new TeleportTransition(targetLevel, destination, net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING));
+                });
+            } else {
+                context.getSource().getServer().execute(() -> {
+                    var targetLevel = TardisDimensionManager.ensureLoaded(context.getSource().getServer(), id);
+                    context.getSource().getServer().execute(() -> {
+                        if (targetLevel == null) {
+                            context.getSource().sendFailure(Component.literal("TARDIS dimension could not be loaded."));
+                            return;
+                        }
+                        TardisDimensionManager.initializeRegistered(context.getSource().getServer(), targetLevel);
+                        var door = targetLevel == null ? null : TardisDimensionManager.interiorDoor(targetLevel);
+                        if (door == null) {
+                            context.getSource().sendFailure(Component.literal("TARDIS interior doorway is not available."));
+                        } else if (player.connection != null) {
+                            ServerPlayNetworking.send(player, new RuntimeDimensionPayload(TardisDimensionManager.key(id).identifier()));
+                            player.teleport(new TeleportTransition(targetLevel, TardisDimensionManager.interiorArrival(targetLevel, door), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, TeleportTransition.DO_NOTHING));
+                        }
+                    });
                 });
             }
             return 1;

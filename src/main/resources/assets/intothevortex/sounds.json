@@ -1,0 +1,6 @@
+{
+  "police_box_door_open": { "sounds": ["intothevortex:police_box_door_open"] },
+  "police_box_door_close": { "sounds": ["intothevortex:police_box_door_close"] },
+  "key_lock": { "sounds": ["intothevortex:key_lock"] },
+  "key_unlock": { "sounds": ["intothevortex:key_unlock"] }
+}

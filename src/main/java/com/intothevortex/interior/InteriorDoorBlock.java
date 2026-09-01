@@ -31,8 +31,9 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
 
     public static void syncState(ServerLevel exteriorWorld, java.util.UUID id, boolean open) {
         ServerLevel interior = TardisDimensionManager.ensureLoaded(exteriorWorld.getServer(), id);
-        if (interior != null && interior.getBlockState(new net.minecraft.core.BlockPos(0, 64, 0)).is(InteriorRegistry.DOOR)) {
-            interior.setBlock(new net.minecraft.core.BlockPos(0, 64, 0), interior.getBlockState(new net.minecraft.core.BlockPos(0, 64, 0)).setValue(OPEN, open), 3);
+        net.minecraft.core.BlockPos door = interior == null ? null : TardisDimensionManager.interiorDoor(interior);
+        if (door != null && interior.getBlockState(door).is(InteriorRegistry.DOOR)) {
+            interior.setBlock(door, interior.getBlockState(door).setValue(OPEN, open), 3);
         }
     }
 
@@ -64,6 +65,10 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         double yaw = Math.toRadians(data.yaw());
         double x = data.position().getX() + 0.5D + Math.sin(yaw) * 1.8D;
         double z = data.position().getZ() + 0.5D - Math.cos(yaw) * 1.8D;
-        player.teleport(new net.minecraft.world.level.portal.TeleportTransition(exterior, new net.minecraft.world.phys.Vec3(x, data.position().getY(), z), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+        markArrival(player);
+        net.minecraft.world.level.portal.TeleportTransition transition = new net.minecraft.world.level.portal.TeleportTransition(exterior, new net.minecraft.world.phys.Vec3(x, data.position().getY(), z), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING);
+        world.getServer().execute(() -> {
+            if (!player.isRemoved() && player.connection != null && player.level() == world) player.teleport(transition);
+        });
     }
 }
