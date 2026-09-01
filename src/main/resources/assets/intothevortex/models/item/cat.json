@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/cat",
+  "parent": "intothevortex:block/cat",
   "display": {
     "thirdperson": {
       "rotation": [

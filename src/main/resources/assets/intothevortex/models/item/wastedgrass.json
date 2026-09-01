@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/wastedgrass",
+  "parent": "intothevortex:block/wastedgrass",
   "display": {
     "thirdperson": {
       "rotation": [

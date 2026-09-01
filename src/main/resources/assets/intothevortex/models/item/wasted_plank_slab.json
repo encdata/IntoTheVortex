@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/wasted_plank_slab",
+  "parent": "intothevortex:block/wasted_plank_slab",
   "display": {
     "thirdperson": {
       "rotation": [

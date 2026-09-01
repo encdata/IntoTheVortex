@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/kaletite",
+  "parent": "intothevortex:block/kaletite",
   "display": {
     "thirdperson": {
       "rotation": [

@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/good_heavens",
+  "parent": "intothevortex:block/good_heavens",
   "display": {
     "thirdperson": {
       "rotation": [

@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/wasted_leaves",
+  "parent": "intothevortex:block/wasted_leaves",
   "display": {
     "thirdperson": {
       "rotation": [

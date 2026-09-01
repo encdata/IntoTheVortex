@@ -1,5 +1,5 @@
 {
-  "parent": "awt:block/lost_dirt",
+  "parent": "intothevortex:block/lost_dirt",
   "display": {
     "thirdperson": {
       "rotation": [
