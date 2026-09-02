@@ -125,7 +125,7 @@ public final class TardisDimensionManager {
         for (int x = 0; x < 48; x++) {
             for (int y = 0; y < 48; y++) {
                 for (int z = 0; z < 48; z++) {
-                    net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
+                    net.minecraft.core.BlockPos pos = INTERIOR_ORIGIN.offset(x, y, z);
                     if (level.getBlockState(pos).is(InteriorRegistry.DOOR)) return pos;
                 }
             }
