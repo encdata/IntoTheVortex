@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"intothevortex:block/vioquartz_roundel"},"facing=east":{"model":"intothevortex:block/vioquartz_roundel","y":90},"facing=south":{"model":"intothevortex:block/vioquartz_roundel","y":180},"facing=west":{"model":"intothevortex:block/vioquartz_roundel","y":270}}}

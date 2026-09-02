@@ -1,7 +1,7 @@
 {
   "parent": "block/cube",
   "textures": {
-    "down": "aintothevortexwt:block/roundel/moss_roundel",
+    "down": "intothevortex:block/roundel/moss_roundel",
     "up": "intothevortex:block/roundel/moss_roundel",
     "north": "intothevortex:block/roundel/moss_roundel",
     "east": "intothevortex:block/roundel/moss_roundel_half",

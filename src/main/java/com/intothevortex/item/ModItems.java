@@ -63,6 +63,24 @@ public final class ModItems {
             ModBlocks.HARTNELL_WALL
     );
 
+    public static final Item ROUNDEL_MOLD = register(
+            "roundel_mold",
+            Item::new,
+            new Item.Properties()
+    );
+
+    public static final java.util.Map<String, Item> ROUNDEL_ITEMS = createRoundelItems();
+
+    private static java.util.Map<String, Item> createRoundelItems() {
+        java.util.Map<String, Item> items = new java.util.LinkedHashMap<>();
+        items.put("hartnell_roundel", HARTNELL_ROUNDEL);
+        items.put("hartnell_wall", HARTNELL_WALL);
+        for (var entry : ModBlocks.ROUNDELS.entrySet()) {
+            if (!items.containsKey(entry.getKey())) items.put(entry.getKey(), registerBlock(entry.getKey(), entry.getValue()));
+        }
+        return java.util.Collections.unmodifiableMap(items);
+    }
+
     public static final Item ECAT = registerBlock(
             "ecat",
             ModBlocks.ECAT
@@ -82,8 +100,18 @@ public final class ModItems {
                     )
             );
 
+    public static final ResourceKey<CreativeModeTab> ROUNDELS_TAB_KEY = ResourceKey.create(
+            Registries.CREATIVE_MODE_TAB,
+            Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "roundels")
+    );
+
+    public static final ResourceKey<CreativeModeTab> DECORATIVE_TAB_KEY = ResourceKey.create(
+            Registries.CREATIVE_MODE_TAB,
+            Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "decorative")
+    );
+
     public static final CreativeModeTab TAB =
-            FabricCreativeModeTab.builder()
+            Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, TAB_KEY, FabricCreativeModeTab.builder()
                     .icon(() -> new ItemStack(TARDIS))
                     .title(Component.translatable(
                             "itemGroup.intothevortex.main"
@@ -109,24 +137,22 @@ public final class ModItems {
                                 com.intothevortex.interior.InteriorRegistry.WALL_MONITOR_ITEM
                         );
                     })
-                    .build();
+                    .build());
 
     public static final CreativeModeTab ROUNDELS_TAB =
-            FabricCreativeModeTab.builder()
+            Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, ROUNDELS_TAB_KEY, FabricCreativeModeTab.builder()
                     .icon(() -> new ItemStack(HARTNELL_ROUNDEL))
                     .title(Component.translatable(
                             "itemGroup.intothevortex.roundels"
                     ))
                     .displayItems((parameters, output) -> {
-
-                        // Hartnell
-                        output.accept(HARTNELL_ROUNDEL);
-                        output.accept(HARTNELL_WALL);
+                        output.accept(ROUNDEL_MOLD);
+                        ROUNDEL_ITEMS.values().forEach(output::accept);
                     })
-                    .build();
+                    .build());
 
     public static final CreativeModeTab DECORATIVE_TAB =
-            FabricCreativeModeTab.builder()
+            Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, DECORATIVE_TAB_KEY, FabricCreativeModeTab.builder()
                     .icon(() -> new ItemStack(GRATE_BLOCK))
                     .title(Component.translatable(
                             "itemGroup.intothevortex.decorative"
@@ -139,7 +165,7 @@ public final class ModItems {
                         output.accept(THICK_GRATE_BLOCK);
                         output.accept(RUSTY_THICK_GRATE_BLOCK);
                     })
-                    .build();
+                    .build());
 
 
 
