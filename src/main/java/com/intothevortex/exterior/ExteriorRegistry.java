@@ -45,7 +45,7 @@ public final class ExteriorRegistry {
         registerVariant("badwolf", "policebox_badwolf.png", "policebox_badwolf_emission.png");
         registerVariant("coral", "policebox_coral.png", "policebox_coral_emission.png");
         registerVariant("purple", "policebox_purple.png", "policebox_purple_emission.png");
-       // registerVariant("texture", "policebox_texture.png");
+        registerVariant("texture", "policebox_texture.png", "policebox_coral_emission.png");
         registerVariant("tokomak", "policebox_tokomak.png", "policebox_tokomak_emission.png");
         registerVariant("toyota_purple", "policebox_purple.png", "policebox_purple_emission.png");
         registerVariant("copper", "policebox_copper.png", "policebox_copper_emission.png");
