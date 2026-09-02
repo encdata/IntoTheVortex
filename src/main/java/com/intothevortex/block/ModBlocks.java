@@ -76,8 +76,7 @@ public final class ModBlocks {
                 "red_concrete_roundel", "yellow_concrete_roundel", "white_concrete_roundel", "black_concrete_roundel",
                 "cyan_concrete_roundel", "light_blue_concrete_roundel", "lime_concrete_roundel", "magenta_concrete_roundel",
                 "blue_concrete_roundel", "brown_concrete_roundel", "gray_concrete_roundel", "green_concrete_roundel",
-                "light_gray_concrete_roundel", "bluequartz_roundel", "crimquartz_roundel", "verdquartz_roundel",
-                "ambquartz_roundel", "vioquartz_roundel", "obsiquartz_roundel"
+                "light_gray_concrete_roundel"
         };
         for (String name : names) {
             roundels.put(name, registerRoundel(name));
