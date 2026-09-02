@@ -91,7 +91,7 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
     }
 
     public static void ensureTop(Level level, net.minecraft.core.BlockPos pos) {
-        if (level.getBlockState(pos.above()).isAir()) level.setBlock(pos.above(), InteriorRegistry.DOOR_TOP.defaultBlockState(), 3);
+        if (!level.getBlockState(pos.above()).is(InteriorRegistry.DOOR_TOP)) level.setBlock(pos.above(), InteriorRegistry.DOOR_TOP.defaultBlockState(), 3);
     }
 
     static InteractionResult interact(Level level, net.minecraft.core.BlockPos pos, Player player, ItemStack stack) {

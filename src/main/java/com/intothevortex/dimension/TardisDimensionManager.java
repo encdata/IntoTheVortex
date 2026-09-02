@@ -74,7 +74,10 @@ public final class TardisDimensionManager {
         if (!data.interiorInitialized() || !hasInterior(level)) {
             if (!placeInterior(server, level)) return;
             net.minecraft.core.BlockPos door = findInteriorDoor(level);
-            if (door == null) return;
+            if (door == null) {
+                ensureDoorMarker(level, INTERIOR_ORIGIN);
+                door = INTERIOR_ORIGIN;
+            }
             data = data.withInteriorDoor(door).withInteriorInitialized(true);
             TardisManager.save(server, data);
         }
@@ -121,15 +124,20 @@ public final class TardisDimensionManager {
     }
 
     private static net.minecraft.core.BlockPos findInteriorDoor(ServerLevel level) {
-        for (int x = -32; x <= 32; x++) {
-            for (int y = 0; y <= 128; y++) {
-                for (int z = -32; z <= 32; z++) {
+        for (int x = -64; x <= 64; x++) {
+            for (int y = 0; y <= 192; y++) {
+                for (int z = -64; z <= 64; z++) {
                     net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
                     if (level.getBlockState(pos).is(InteriorRegistry.DOOR)) return pos;
                 }
             }
         }
         return null;
+    }
+
+    private static void ensureDoorMarker(ServerLevel level, net.minecraft.core.BlockPos pos) {
+        level.setBlock(pos, InteriorRegistry.DOOR.defaultBlockState().setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, net.minecraft.core.Direction.NORTH), 3);
+        com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, pos);
     }
 
     public static net.minecraft.world.phys.Vec3 interiorArrival(ServerLevel level, net.minecraft.core.BlockPos door) {
@@ -159,7 +167,9 @@ public final class TardisDimensionManager {
             return false;
         }
         net.minecraft.core.BlockPos origin = INTERIOR_ORIGIN;
-        level.getChunkAt(origin);
+        for (int x = origin.getX(); x < origin.getX() + 48; x += 16) {
+            for (int z = origin.getZ(); z < origin.getZ() + 48; z += 16) level.getChunkAt(new net.minecraft.core.BlockPos(x, origin.getY(), z));
+        }
         boolean placed = template.placeInWorld(level, origin, origin, new StructurePlaceSettings().setKnownShape(true).setIgnoreEntities(false), RandomSource.create(), 2);
         if (!placed || !hasInterior(level)) return false;
         net.minecraft.core.BlockPos placedDoor = findInteriorDoor(level);

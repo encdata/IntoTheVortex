@@ -59,6 +59,7 @@ public abstract class MinecraftServerMixin implements TardisDimensionServer {
         for (ServerLevel level : intothevortex$pendingLevels) {
             levels.put(level.dimension(), level);
             RuntimeDimensionSync.sendCreateToAll((MinecraftServer) (Object) this, level.dimension());
+            ((MinecraftServer) (Object) this).getPlayerList().broadcastAll(new net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket(net.minecraft.tags.TagNetworkSerialization.serializeTagsToNetwork(((MinecraftServer) (Object) this).registries())));
             level.tick(() -> true);
             TardisDimensionManager.initializeRegistered((MinecraftServer) (Object) this, level);
         }
