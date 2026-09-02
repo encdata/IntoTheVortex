@@ -1,0 +1,22 @@
+
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "bbb",
+    "bab",
+    "bbb"
+  ],
+  "key": {
+    "a": {
+      "item": "minecraft:purple_concrete"
+    },
+    "b": {
+      "item": "intothevortex:roundel_mold"
+    }
+  },
+  "result": {
+    "item": "intothevortex:purple_concrete_roundel",
+    "count": 2
+  }
+}

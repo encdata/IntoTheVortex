@@ -1,0 +1,22 @@
+
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "bbb",
+    "bab",
+    "bbb"
+  ],
+  "key": {
+    "a": {
+      "item": "intothevortex:hartnell_wall"
+    },
+    "b": {
+      "item": "intothevortex:roundel_mold"
+    }
+  },
+  "result": {
+    "item": "intothevortex:hartnell_roundel",
+    "count": 2
+  }
+}

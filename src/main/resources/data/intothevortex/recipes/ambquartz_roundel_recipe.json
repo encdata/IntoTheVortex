@@ -1,0 +1,22 @@
+
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "key": {
+    "a": {
+      "item": "intothevortex:quartz_roundel"
+    },
+    "b": {
+      "item": "minecraft:yellow_dye"
+    }
+  },
+  "result": {
+    "item": "intothevortex:ambquartz_roundel",
+    "count": 8
+  }
+}

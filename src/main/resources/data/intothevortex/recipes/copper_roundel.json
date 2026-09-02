@@ -1,0 +1,22 @@
+
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "bbb",
+    "bab",
+    "bbb"
+  ],
+  "key": {
+    "a": {
+      "item": "minecraft:copper_block"
+    },
+    "b": {
+      "item": "intothevortex:roundel_mold"
+    }
+  },
+  "result": {
+    "item": "intothevortex:copper_roundel",
+    "count": 2
+  }
+}
