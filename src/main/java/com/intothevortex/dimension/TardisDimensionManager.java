@@ -124,9 +124,15 @@ public final class TardisDimensionManager {
     }
 
     private static net.minecraft.core.BlockPos findInteriorDoor(ServerLevel level) {
-        for (int x = -64; x <= 64; x++) {
-            for (int y = 0; y <= 192; y++) {
-                for (int z = -64; z <= 64; z++) {
+        UUID dimensionId = id(level.dimension());
+        TardisData data = dimensionId == null ? null : TardisManager.get(level.getServer(), dimensionId);
+        if (data != null && data.interiorDoorStored()) {
+            net.minecraft.core.BlockPos stored = data.interiorDoor();
+            if (level.getBlockState(stored).is(InteriorRegistry.DOOR)) return stored;
+        }
+        for (int x = 0; x < 48; x++) {
+            for (int y = 0; y < 48; y++) {
+                for (int z = 0; z < 48; z++) {
                     net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
                     if (level.getBlockState(pos).is(InteriorRegistry.DOOR)) return pos;
                 }
