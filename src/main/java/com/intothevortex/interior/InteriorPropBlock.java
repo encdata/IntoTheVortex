@@ -26,7 +26,7 @@ public final class InteriorPropBlock extends Block implements net.minecraft.worl
     @Override public net.minecraft.world.level.block.state.BlockState getStateForPlacement(BlockPlaceContext context) { return console ? defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, context.getHorizontalDirection().getOpposite()) : defaultBlockState(); }
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, net.minecraft.world.level.block.state.BlockState> builder) { builder.add(BlockStateProperties.HORIZONTAL_FACING); }
     @Override public void onPlace(net.minecraft.world.level.block.state.BlockState state, Level level, BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState, boolean movedByPiston) { super.onPlace(state, level, pos, oldState, movedByPiston); if (console && level.getBlockEntity(pos) instanceof ConsoleBlockEntity entity) entity.createHitboxes(); }
-    @Override public net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.block.Rotation rotation) { return console ? state.setValue(BlockStateProperties.HORIZONTAL_FACING, rotation.rotate(state.getValue(BlockStateProperties.HORIZONTAL_FACING))) : state; }
+    @Override public net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.block.Rotation rotation) { return state; }
     @Override protected InteractionResult useWithoutItem(net.minecraft.world.level.block.state.BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         return InteractionResult.PASS;
     }

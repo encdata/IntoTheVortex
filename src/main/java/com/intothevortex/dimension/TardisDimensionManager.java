@@ -74,10 +74,7 @@ public final class TardisDimensionManager {
         if (!data.interiorInitialized() || !hasInterior(level)) {
             if (!placeInterior(server, level)) return;
             net.minecraft.core.BlockPos door = findInteriorDoor(level);
-            if (door == null) {
-                ensureDoorMarker(level, INTERIOR_ORIGIN);
-                door = INTERIOR_ORIGIN;
-            }
+            if (door == null) return;
             data = data.withInteriorDoor(door).withInteriorInitialized(true);
             TardisManager.save(server, data);
         }
@@ -135,12 +132,6 @@ public final class TardisDimensionManager {
         return null;
     }
 
-    private static void ensureDoorMarker(ServerLevel level, net.minecraft.core.BlockPos pos) {
-        level.setBlock(pos, InteriorRegistry.DOOR.defaultBlockState().setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, net.minecraft.core.Direction.NORTH), 3);
-        com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, pos);
-    }
-
-
     public static net.minecraft.world.phys.Vec3 interiorArrival(ServerLevel level, net.minecraft.core.BlockPos door) {
         net.minecraft.core.Direction direction = level.getBlockState(door).getValue(com.intothevortex.interior.InteriorDoorBlock.FACING);
         return new net.minecraft.world.phys.Vec3(door.getX() + 0.5D - direction.getStepX() * 1.2D, door.getY(), door.getZ() + 0.5D - direction.getStepZ() * 1.2D);
@@ -158,7 +149,7 @@ public final class TardisDimensionManager {
                 CompoundTag state = palette.getCompoundOrEmpty(index);
                 String name = state.getStringOr("Name", "minecraft:air");
                 if (name.startsWith("ait:")) state.putString("Name", name.equals("ait:door_block") ? "intothevortex:interior_door" : name.equals("ait:wall_monitor_block") ? "intothevortex:wall_monitor" : name.equals("ait:console") || name.startsWith("ait:console/") ? "intothevortex:console" : "minecraft:stone");
-                else if (!name.startsWith("minecraft:")) state.putString("Name", "minecraft:stone");
+                else if (!name.startsWith("minecraft:") && !name.startsWith("intothevortex:")) state.putString("Name", "minecraft:stone");
             }
             tag.remove("entities");
             tag.remove("block_entities");
@@ -175,12 +166,10 @@ public final class TardisDimensionManager {
         LOGGER.info("Placed converted interior for TARDIS {} in {}. Door={}", id(level.dimension()), level.dimension().identifier(), placedDoor);
         if (placedDoor != null) {
             var state = level.getBlockState(placedDoor);
-            if (state.hasProperty(com.intothevortex.interior.InteriorDoorBlock.FACING)) level.setBlock(placedDoor, state.setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, state.getValue(com.intothevortex.interior.InteriorDoorBlock.FACING).getOpposite()), 3);
             com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, placedDoor);
             return true;
         }
-        ensureDoorMarker(level, origin);
-        return true;
+        return false;
     }
 
     public static void tick(MinecraftServer server) {
