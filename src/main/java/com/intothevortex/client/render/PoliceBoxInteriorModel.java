@@ -94,8 +94,8 @@ meshDefinition,
 	@Override
 	public void setupAnim(TardisExteriorRenderState state) {
 		super.setupAnim(state);
-		var animation = com.intothevortex.exterior.ExteriorRegistry.get(net.minecraft.resources.Identifier.parse(state.exterior)).animation();
-		leftdoor.yRot = animation.closedLeft() + (animation.openLeft() - animation.closedLeft()) * state.doorProgress;
-		rightdoor.yRot = animation.closedRight() + (animation.openRight() - animation.closedRight()) * state.doorProgress;
+		var animation = com.intothevortex.exterior.TardisAnimationManager.getDoor(net.minecraft.resources.Identifier.parse(state.doorAnimation));
+		leftdoor.yRot = animation.left(state.doorProgress);
+		rightdoor.yRot = animation.right(state.doorProgress);
 	}
 }

@@ -12,6 +12,8 @@ public final class ModSounds {
     public static final SoundEvent DOOR_CLOSE = register("police_box_door_close");
     public static final SoundEvent KEY_LOCK = register("key_lock");
     public static final SoundEvent KEY_UNLOCK = register("key_unlock");
+    public static final SoundEvent TARDIS_DEMAT = register("type70demat");
+    public static final SoundEvent TARDIS_MAT = register("type70mat");
     private ModSounds() {}
     public static void initialize() {}
     private static SoundEvent register(String name) {

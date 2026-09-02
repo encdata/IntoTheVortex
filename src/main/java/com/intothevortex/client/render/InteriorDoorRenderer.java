@@ -30,6 +30,7 @@ public final class InteriorDoorRenderer implements BlockEntityRenderer<InteriorD
         state.modelState.exterior = blockEntity.exterior();
         state.modelState.doorOpen = blockEntity.getBlockState().getValue(InteriorDoorBlock.OPEN);
         state.modelState.doorProgress = blockEntity.doorProgress();
+        state.modelState.doorAnimation = blockEntity.doorAnimation();
         state.modelState.lightCoords = state.lightCoords;
         state.modelState.outlineColor = 0;
     }

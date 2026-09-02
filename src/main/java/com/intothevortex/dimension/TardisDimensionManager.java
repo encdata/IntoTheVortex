@@ -48,10 +48,14 @@ public final class TardisDimensionManager {
         }
         ServerLevel overworld = server.overworld();
         LevelStem overworldStem = server.registries().compositeAccess().lookupOrThrow(Registries.LEVEL_STEM).getOrThrow(LevelStem.OVERWORLD).value();
-        LevelStem stem = new LevelStem(overworldStem.type(), new VoidChunkGenerator(overworldStem.generator().getBiomeSource()));
+        var dimensionTypes = server.registries().compositeAccess().lookup(Registries.DIMENSION_TYPE).orElseThrow();
+        var stems = server.registries().compositeAccess().lookup(Registries.LEVEL_STEM).orElseThrow();
+        var type = RuntimeRegistry.register(dimensionTypes, key.identifier(), copyDimensionType(overworldStem.type().value()));
+        LevelStem stem = new LevelStem(type, new VoidChunkGenerator(overworldStem.generator().getBiomeSource()));
+        RuntimeRegistry.register(stems, key.identifier(), stem);
         try {
             var access = ((TardisDimensionServer) server).intothevortex$storageSource();
-            ServerLevel level = new ServerLevel(server, java.util.concurrent.ForkJoinPool.commonPool(), access, server.getWorldData().overworldData(), key, stem, false, id.getMostSignificantBits(), new ArrayList<>(), false);
+            ServerLevel level = new ServerLevel(server, ((TardisDimensionServer) server).intothevortex$executor(), access, server.getWorldData().overworldData(), key, stem, false, id.getMostSignificantBits(), new ArrayList<>(), false);
             level.getChunkSource().setViewDistance(server.getPlayerList().getViewDistance());
             level.getChunkSource().setSimulationDistance(server.getPlayerList().getSimulationDistance());
             ((TardisDimensionServer) server).intothevortex$queueLevel(level);
@@ -132,14 +136,14 @@ public final class TardisDimensionManager {
     }
 
     private static void ensureDoorMarker(ServerLevel level, net.minecraft.core.BlockPos pos) {
-        level.setBlock(pos, InteriorRegistry.DOOR.defaultBlockState().setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, net.minecraft.core.Direction.SOUTH), 3);
+        level.setBlock(pos, InteriorRegistry.DOOR.defaultBlockState().setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, net.minecraft.core.Direction.NORTH), 3);
         com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, pos);
     }
 
 
     public static net.minecraft.world.phys.Vec3 interiorArrival(ServerLevel level, net.minecraft.core.BlockPos door) {
         net.minecraft.core.Direction direction = level.getBlockState(door).getValue(com.intothevortex.interior.InteriorDoorBlock.FACING);
-        return new net.minecraft.world.phys.Vec3(door.getX() + 0.5D + direction.getStepX() * 1.2D, door.getY(), door.getZ() + 0.5D + direction.getStepZ() * 1.2D);
+        return new net.minecraft.world.phys.Vec3(door.getX() + 0.5D - direction.getStepX() * 1.2D, door.getY(), door.getZ() + 0.5D - direction.getStepZ() * 1.2D);
     }
 
     private static boolean placeInterior(MinecraftServer server, ServerLevel level) {
@@ -153,15 +157,11 @@ public final class TardisDimensionManager {
             for (int index = 0; index < palette.size(); index++) {
                 CompoundTag state = palette.getCompoundOrEmpty(index);
                 String name = state.getStringOr("Name", "minecraft:air");
-                if (name.startsWith("ait:")) state.putString("Name", switch (name) {
-                    case "ait:door_block" -> "intothevortex:interior_door";
-                    case "ait:console" -> "intothevortex:console";
-                    case "ait:wall_monitor_block" -> "intothevortex:wall_monitor";
-                    default -> "minecraft:stone";
-                });
+                if (name.startsWith("ait:")) state.putString("Name", name.equals("ait:door_block") ? "intothevortex:interior_door" : name.equals("ait:wall_monitor_block") ? "intothevortex:wall_monitor" : name.equals("ait:console") || name.startsWith("ait:console/") ? "intothevortex:console" : "minecraft:stone");
                 else if (!name.startsWith("minecraft:")) state.putString("Name", "minecraft:stone");
             }
             tag.remove("entities");
+            tag.remove("block_entities");
             template = new StructureTemplate();
             template.load(server.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK), tag);
         } catch (java.io.IOException exception) {
@@ -174,6 +174,8 @@ public final class TardisDimensionManager {
         net.minecraft.core.BlockPos placedDoor = findInteriorDoor(level);
         LOGGER.info("Placed converted interior for TARDIS {} in {}. Door={}", id(level.dimension()), level.dimension().identifier(), placedDoor);
         if (placedDoor != null) {
+            var state = level.getBlockState(placedDoor);
+            if (state.hasProperty(com.intothevortex.interior.InteriorDoorBlock.FACING)) level.setBlock(placedDoor, state.setValue(com.intothevortex.interior.InteriorDoorBlock.FACING, state.getValue(com.intothevortex.interior.InteriorDoorBlock.FACING).getOpposite()), 3);
             com.intothevortex.interior.InteriorDoorBlock.ensureTop(level, placedDoor);
             return true;
         }
@@ -204,6 +206,28 @@ public final class TardisDimensionManager {
         INTERIOR_READY_CALLBACKS.remove(id);
     }
 
+    private static net.minecraft.world.level.dimension.DimensionType copyDimensionType(net.minecraft.world.level.dimension.DimensionType source) {
+        return new net.minecraft.world.level.dimension.DimensionType(source.hasFixedTime(), source.hasSkyLight(), source.hasCeiling(), source.hasEnderDragonFight(), source.coordinateScale(), source.minY(), source.height(), source.logicalHeight(), source.infiniburn(), source.ambientLight(), source.monsterSettings(), source.skybox(), source.cardinalLightType(), source.attributes(), source.timelines(), source.defaultClock());
+    }
+
+    public static void shutdown(MinecraftServer server) {
+        java.util.List<ServerLevel> levels = new java.util.ArrayList<>();
+        server.getAllLevels().forEach(level -> { if (id(level.dimension()) != null) levels.add(level); });
+        for (ServerLevel level : levels) {
+            UUID tardisId = id(level.dimension());
+            if (tardisId == null) continue;
+            try {
+                level.save(null, true, false);
+                ((TardisDimensionServer) server).intothevortex$removeLevel(level.dimension());
+                level.close();
+            } catch (java.io.IOException exception) {
+                LOGGER.error("Unable to close TARDIS dimension {} during server shutdown", tardisId, exception);
+            }
+        }
+        EMPTY_TICKS.clear();
+        INTERIOR_READY_CALLBACKS.clear();
+    }
+
     public static boolean replaceInterior(MinecraftServer server, UUID id) {
         TardisData data = TardisManager.get(server, id);
         if (data == null) return false;
@@ -214,7 +238,7 @@ public final class TardisDimensionManager {
             java.util.List<ServerPlayer> players = new java.util.ArrayList<>(level.players());
             for (ServerPlayer player : players) {
                 var pos = data.position().getCenter();
-                player.teleport(new net.minecraft.world.level.portal.TeleportTransition(exterior, new net.minecraft.world.phys.Vec3(pos.x, pos.y, pos.z + 1.8D), net.minecraft.world.phys.Vec3.ZERO, data.yaw(), 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+                player.teleportTo(exterior, pos.x, pos.y, pos.z + 1.8D, java.util.Set.of(), data.yaw(), 0.0F, false);
             }
             java.util.List<net.minecraft.world.entity.Entity> entities = new java.util.ArrayList<>();
             level.getAllEntities().forEach(entities::add);

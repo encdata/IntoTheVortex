@@ -8,4 +8,5 @@ public interface TardisDimensionServer {
     void intothevortex$queueLevel(ServerLevel level);
     boolean intothevortex$removeLevel(ResourceKey<Level> key);
     net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess intothevortex$storageSource();
+    java.util.concurrent.Executor intothevortex$executor();
 }

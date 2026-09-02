@@ -24,6 +24,7 @@ public final class InteriorRegistry {
     public static final Block CONSOLE = Registry.register(BuiltInRegistries.BLOCK, CONSOLE_KEY, new InteriorPropBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().setId(CONSOLE_KEY), true));
     public static final Block WALL_MONITOR = Registry.register(BuiltInRegistries.BLOCK, WALL_MONITOR_KEY, new InteriorPropBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().setId(WALL_MONITOR_KEY)));
     public static final BlockEntityType<InteriorDoorBlockEntity> DOOR_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "interior_door")), createDoorEntity());
+    public static final BlockEntityType<ConsoleBlockEntity> CONSOLE_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, ResourceKey.create(net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "console")), createConsoleEntity());
     public static final Item DOOR_ITEM = registerItem("interior_door", DOOR, DOOR_KEY);
     public static final Item CONSOLE_ITEM = registerItem("console", CONSOLE, CONSOLE_KEY);
     public static final Item WALL_MONITOR_ITEM = registerItem("wall_monitor", WALL_MONITOR, WALL_MONITOR_KEY);
@@ -43,6 +44,16 @@ public final class InteriorRegistry {
         } catch (ReflectiveOperationException exception) {
             throw new ExceptionInInitializerError(exception);
         }
+    }
+    @SuppressWarnings("unchecked")
+    private static BlockEntityType<ConsoleBlockEntity> createConsoleEntity() {
+        try {
+            var constructor = java.util.Arrays.stream(BlockEntityType.class.getDeclaredConstructors()).filter(value -> value.getParameterCount() == 2).findFirst().orElseThrow();
+            constructor.setAccessible(true);
+            Class<?> supplierType = constructor.getParameterTypes()[0];
+            Object supplier = java.lang.reflect.Proxy.newProxyInstance(supplierType.getClassLoader(), new Class<?>[]{supplierType}, (proxy, method, args) -> new ConsoleBlockEntity((net.minecraft.core.BlockPos) args[0], (net.minecraft.world.level.block.state.BlockState) args[1]));
+            return (BlockEntityType<ConsoleBlockEntity>) constructor.newInstance(supplier, java.util.Set.of(CONSOLE));
+        } catch (ReflectiveOperationException exception) { throw new ExceptionInInitializerError(exception); }
     }
     public static void initialize() {
         register("intothevortex:70default");

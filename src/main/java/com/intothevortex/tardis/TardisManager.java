@@ -41,7 +41,20 @@ public final class TardisManager {
                 owner.getYRot() + 180.0F,
                 false,
                 false,
-                false
+                false,
+                "intothevortex:door_swing",
+                "intothevortex:pulsating_demat",
+                "intothevortex:pulsating_mat",
+                TardisTravelState.LANDED,
+                0,
+                0,
+                0,
+                level.dimension().identifier().toString(),
+                position,
+                owner.getYRot() + 180.0F,
+                level.dimension().identifier().toString(),
+                position,
+                owner.getYRot() + 180.0F
         );
         save(level.getServer(), tardis);
         return spawnExterior(level.getServer(), tardis);
@@ -112,14 +125,16 @@ public final class TardisManager {
         return server.getWorldPath(LevelResource.ROOT).resolve("IntoTheVortex");
     }
 
-    private record StoredTardis(UUID id, UUID ownerId, UUID exteriorId, String exterior, String interior, String dimension, int x, int y, int z, int interiorDoorX, int interiorDoorY, int interiorDoorZ, boolean interiorDoorStored, float yaw, boolean locked, boolean doorOpen, boolean interiorInitialized) {
+    private record StoredTardis(UUID id, UUID ownerId, UUID exteriorId, String exterior, String interior, String dimension, int x, int y, int z, int interiorDoorX, int interiorDoorY, int interiorDoorZ, boolean interiorDoorStored, float yaw, boolean locked, boolean doorOpen, boolean interiorInitialized, String doorAnimation, String dematAnimation, String matAnimation, TardisTravelState travelState, int phaseTicks, int flightTicks, int targetFlightTicks, String travelSourceDimension, int travelSourceX, int travelSourceY, int travelSourceZ, float travelSourceYaw, String travelDestinationDimension, int travelDestinationX, int travelDestinationY, int travelDestinationZ, float travelDestinationYaw) {
         private static StoredTardis from(TardisData data) {
-            return new StoredTardis(data.id(), data.ownerId(), data.exteriorId(), data.exterior(), data.interior(), data.dimension(), data.position().getX(), data.position().getY(), data.position().getZ(), data.interiorDoor().getX(), data.interiorDoor().getY(), data.interiorDoor().getZ(), data.interiorDoorStored(), data.yaw(), data.locked(), data.doorOpen(), data.interiorInitialized());
+            return new StoredTardis(data.id(), data.ownerId(), data.exteriorId(), data.exterior(), data.interior(), data.dimension(), data.position().getX(), data.position().getY(), data.position().getZ(), data.interiorDoor().getX(), data.interiorDoor().getY(), data.interiorDoor().getZ(), data.interiorDoorStored(), data.yaw(), data.locked(), data.doorOpen(), data.interiorInitialized(), data.doorAnimation(), data.dematAnimation(), data.matAnimation(), data.travelState(), data.phaseTicks(), data.flightTicks(), data.targetFlightTicks(), data.travelSourceDimension(), data.travelSourcePosition().getX(), data.travelSourcePosition().getY(), data.travelSourcePosition().getZ(), data.travelSourceYaw(), data.travelDestinationDimension(), data.travelDestinationPosition().getX(), data.travelDestinationPosition().getY(), data.travelDestinationPosition().getZ(), data.travelDestinationYaw());
         }
 
         private TardisData toData() {
             BlockPos door = interiorDoorY == 0 ? new BlockPos(0, 64, 0) : new BlockPos(interiorDoorX, interiorDoorY, interiorDoorZ);
-            return new TardisData(id, ownerId, exteriorId, exterior, interior == null ? "intothevortex:70default" : interior, dimension, new BlockPos(x, y, z), door, interiorDoorStored, yaw, locked, doorOpen, interiorInitialized);
+            String demat = dematAnimation == null || dematAnimation.equals("intothevortex:default") ? "intothevortex:pulsating_demat" : dematAnimation;
+            String mat = matAnimation == null || matAnimation.equals("intothevortex:default") ? "intothevortex:pulsating_mat" : matAnimation;
+            return new TardisData(id, ownerId, exteriorId, exterior, interior == null ? "intothevortex:70default" : interior, dimension, new BlockPos(x, y, z), door, interiorDoorStored, yaw, locked, doorOpen, interiorInitialized, doorAnimation == null ? "intothevortex:door_swing" : doorAnimation, demat, mat, travelState == null ? TardisTravelState.LANDED : travelState, phaseTicks, flightTicks, targetFlightTicks, travelSourceDimension == null ? dimension : travelSourceDimension, new BlockPos(travelSourceX, travelSourceY, travelSourceZ), travelSourceYaw, travelDestinationDimension == null ? dimension : travelDestinationDimension, new BlockPos(travelDestinationX, travelDestinationY, travelDestinationZ), travelDestinationYaw);
         }
     }
 }

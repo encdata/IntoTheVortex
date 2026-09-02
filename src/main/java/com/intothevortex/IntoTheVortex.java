@@ -2,6 +2,7 @@ package com.intothevortex;
 
 import com.intothevortex.command.IntoTheVortexCommands;
 import com.intothevortex.network.RuntimeDimensionPayload;
+import com.intothevortex.network.RuntimeDimensionSync;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import com.intothevortex.dimension.RuntimeDimensionRestoration;
@@ -16,6 +17,10 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import com.intothevortex.block.ModBlocks;
 import com.intothevortex.sound.ModSounds;
+import com.intothevortex.exterior.TardisAnimationManager;
+import com.intothevortex.tardis.TardisTravelManager;
+import com.intothevortex.interior.InteriorDoorBlock;
+import com.intothevortex.interior.ConsoleRegistry;
 
 public final class IntoTheVortex implements ModInitializer {
     public static final String MOD_ID = "intothevortex";
@@ -24,8 +29,10 @@ public final class IntoTheVortex implements ModInitializer {
     public void onInitialize() {
         ModSounds.initialize();
         ExteriorRegistry.initialize();
+        TardisAnimationManager.initializeTravel();
         ModEntityTypes.initialize();
         InteriorRegistry.initialize();
+        ConsoleRegistry.initialize();
         IntoTheVortexCommands.initialize();
         ModBlocks.initialize();
 
@@ -34,17 +41,22 @@ public final class IntoTheVortex implements ModInitializer {
 
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            server.execute(() -> server.getAllLevels().forEach(level -> {
+                if (TardisDimensionManager.id(level.dimension()) != null) RuntimeDimensionSync.sendCreate(server, handler.getPlayer(), level.dimension());
+            }));
             java.util.UUID tardisId = RuntimeDimensionRestoration.consume(handler.getPlayer().getUUID());
             if (tardisId == null) return;
-            server.execute(() -> {
-                var level = TardisDimensionManager.ensureLoaded(server, tardisId);
-                if (level != null && handler.getPlayer().level() == server.overworld()) {
-                    handler.getPlayer().teleport(new TeleportTransition(level, handler.getPlayer().position(), handler.getPlayer().getDeltaMovement(), handler.getPlayer().getYRot(), handler.getPlayer().getXRot(), TeleportTransition.DO_NOTHING));
-                }
-            });
+            server.execute(() -> TardisDimensionManager.whenInteriorReady(server, tardisId, level -> {
+                var player = handler.getPlayer();
+                if (player.connection != null && player.level() == server.overworld()) player.teleportTo(level, player.getX(), player.getY(), player.getZ(), java.util.Set.of(), player.getYRot(), player.getXRot(), false);
+            }));
         });
 
-        ServerTickEvents.END_SERVER_TICK.register(TardisDimensionManager::tick);
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            TardisDimensionManager.tick(server);
+            InteriorDoorBlock.tickExits(server);
+            TardisTravelManager.tick(server);
+        });
     }
 }
 

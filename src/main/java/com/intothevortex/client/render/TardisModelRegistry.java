@@ -13,12 +13,14 @@ public final class TardisModelRegistry {
     private static final Identifier DEFAULT_INTERIOR = Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "interior/police_box");
     private static final Map<Identifier, Supplier<Model<TardisExteriorRenderState>>> EXTERIOR_MODELS = new LinkedHashMap<>();
     private static final Map<Identifier, Supplier<Model<TardisExteriorRenderState>>> INTERIOR_MODELS = new LinkedHashMap<>();
+    private static final Map<Identifier, Supplier<Model<TardisExteriorRenderState>>> CONSOLE_MODELS = new LinkedHashMap<>();
 
     private TardisModelRegistry() {
     }
 
     public static void initialize() {
         register(DEFAULT_EXTERIOR, DEFAULT_INTERIOR, () -> new PoliceBoxModel(PoliceBoxModel.createBodyLayer().bakeRoot()), () -> new PoliceBoxInteriorModel(PoliceBoxInteriorModel.createBodyLayer().bakeRoot()));
+        registerConsole(Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "toyota"), () -> new ToyotaConsoleModel(ToyotaConsoleModel.createBodyLayer().bakeRoot()));
     }
 
     public static void register(Identifier exteriorId, Identifier interiorId, Supplier<Model<TardisExteriorRenderState>> exteriorFactory, Supplier<Model<TardisExteriorRenderState>> interiorFactory) {
@@ -33,4 +35,8 @@ public final class TardisModelRegistry {
     public static Model<TardisExteriorRenderState> interior(Identifier id) {
         return INTERIOR_MODELS.getOrDefault(id, INTERIOR_MODELS.get(DEFAULT_INTERIOR)).get();
     }
+
+    public static void registerConsole(Identifier id, Supplier<Model<TardisExteriorRenderState>> factory) { CONSOLE_MODELS.put(id, factory); }
+
+    public static Model<TardisExteriorRenderState> console(Identifier id) { return CONSOLE_MODELS.getOrDefault(id, CONSOLE_MODELS.get(Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "toyota"))).get(); }
 }

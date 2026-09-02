@@ -15,6 +15,10 @@ public final class ModEntityTypes {
             "tardis_exterior",
             EntityType.Builder.<TardisExteriorEntity>of(TardisExteriorEntity::new, MobCategory.MISC).sized(1.5F, 3.1F)
     );
+    public static final EntityType<ControlHitboxEntity> CONTROL_HITBOX = register(
+            "control_hitbox",
+            EntityType.Builder.<ControlHitboxEntity>of(ControlHitboxEntity::new, MobCategory.MISC).sized(0.2F, 0.2F).clientTrackingRange(64).updateInterval(1)
+    );
 
     private ModEntityTypes() {
     }

@@ -2,6 +2,8 @@ package com.intothevortex.mixin;
 
 import com.intothevortex.dimension.TardisDimensionServer;
 import com.intothevortex.dimension.TardisDimensionManager;
+import com.intothevortex.dimension.RuntimeRegistry;
+import com.intothevortex.network.RuntimeDimensionSync;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,16 +24,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MinecraftServerMixin implements TardisDimensionServer {
     @Shadow @Final private Map<ResourceKey<Level>, ServerLevel> levels;
     @Shadow @Final protected net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess storageSource;
+    @Shadow @Final private java.util.concurrent.Executor executor;
     @Unique private final List<ServerLevel> intothevortex$pendingLevels = new ArrayList<>();
 
     @Override
     public void intothevortex$queueLevel(ServerLevel level) {
+        if (levels.containsKey(level.dimension())) return;
+        for (ServerLevel pending : intothevortex$pendingLevels) if (pending.dimension().equals(level.dimension())) return;
         intothevortex$pendingLevels.add(level);
     }
 
     @Override
     public boolean intothevortex$removeLevel(ResourceKey<Level> key) {
-        return levels.remove(key) != null;
+        ServerLevel level = levels.remove(key);
+        if (level == null) return false;
+        RuntimeRegistry.unregister(((MinecraftServer) (Object) this).registries().compositeAccess().lookup(net.minecraft.core.registries.Registries.LEVEL_STEM).orElseThrow(), key.identifier());
+        RuntimeRegistry.unregister(((MinecraftServer) (Object) this).registries().compositeAccess().lookup(net.minecraft.core.registries.Registries.DIMENSION_TYPE).orElseThrow(), key.identifier());
+        RuntimeDimensionSync.sendRemoveToAll((MinecraftServer) (Object) this, key.identifier());
+        return true;
     }
 
     @Override
@@ -39,13 +49,24 @@ public abstract class MinecraftServerMixin implements TardisDimensionServer {
         return storageSource;
     }
 
+    @Override
+    public java.util.concurrent.Executor intothevortex$executor() {
+        return executor;
+    }
+
     @Inject(method = "tickChildren", at = @At("HEAD"))
     private void intothevortex$registerPending(BooleanSupplier shouldKeepTicking, CallbackInfo callback) {
         for (ServerLevel level : intothevortex$pendingLevels) {
             levels.put(level.dimension(), level);
+            RuntimeDimensionSync.sendCreateToAll((MinecraftServer) (Object) this, level.dimension());
             level.tick(() -> true);
             TardisDimensionManager.initializeRegistered((MinecraftServer) (Object) this, level);
         }
         intothevortex$pendingLevels.clear();
+    }
+
+    @Inject(method = "stopServer", at = @At("HEAD"))
+    private void intothevortex$saveRuntimeDimensions(CallbackInfo callback) {
+        TardisDimensionManager.shutdown((MinecraftServer) (Object) this);
     }
 }

@@ -14,6 +14,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 
 public final class InteriorDoorBlockEntity extends BlockEntity {
     private String exterior = "intothevortex:default";
+    private String doorAnimation = "intothevortex:door_swing";
     private float doorProgress;
 
     public InteriorDoorBlockEntity(BlockPos pos, BlockState state) {
@@ -24,11 +25,18 @@ public final class InteriorDoorBlockEntity extends BlockEntity {
         return exterior;
     }
 
+    public String doorAnimation() { return doorAnimation; }
+
     public void setExterior(String value) {
         if (exterior.equals(value)) return;
         exterior = value;
         setChanged();
         if (level != null && !level.isClientSide()) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    public void setDoorAnimation(String value) {
+        doorAnimation = value;
+        setChanged();
     }
 
     public float doorProgress() {
@@ -41,12 +49,14 @@ public final class InteriorDoorBlockEntity extends BlockEntity {
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
         exterior = input.getString("exterior").orElse("intothevortex:default");
+        doorAnimation = input.getString("door_animation").orElse("intothevortex:door_swing");
     }
 
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
         output.putString("exterior", exterior);
+        output.putString("door_animation", doorAnimation);
     }
 
     @Override

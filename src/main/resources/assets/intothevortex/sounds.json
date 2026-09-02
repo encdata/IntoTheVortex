@@ -3,4 +3,6 @@
   "police_box_door_close": { "sounds": ["intothevortex:police_box_door_close"] },
   "key_lock": { "sounds": ["intothevortex:key_lock"] },
   "key_unlock": { "sounds": ["intothevortex:key_unlock"] }
+  ,"type70demat": { "sounds": ["intothevortex:type70demat"] }
+  ,"type70mat": { "sounds": ["intothevortex:type70mat"] }
 }

@@ -4,6 +4,8 @@ import com.intothevortex.dimension.TardisDimensionManager;
 import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
 import com.intothevortex.tardis.TardisAccessRegistry;
+import com.intothevortex.tardis.TardisTeleportCooldowns;
+import com.intothevortex.entity.TardisExteriorEntity;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,6 +40,7 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
     public static final net.minecraft.world.level.block.state.properties.BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final java.util.Map<java.util.UUID, Long> ARRIVAL_COOLDOWNS = new java.util.HashMap<>();
+    private static final java.util.Set<java.util.UUID> PENDING_EXITS = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public InteriorDoorBlock(BlockBehaviour.Properties properties) { super(properties.noOcclusion().strength(-1.0F, 3600000.0F)); registerDefaultState(stateDefinition.any().setValue(OPEN, false).setValue(FACING, Direction.NORTH)); }
 
@@ -68,12 +71,23 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
             interior.setBlock(door, interior.getBlockState(door).setValue(OPEN, open), 3);
             syncExterior(interior, id);
         }
+        TardisData data = TardisManager.get(exteriorWorld.getServer(), id);
+        if (data != null) {
+            ServerLevel exterior = exteriorWorld.getServer().getLevel(TardisDimensionManager.parseDimension(data.dimension()));
+            if (exterior != null) exterior.getAllEntities().forEach(entity -> {
+                if (entity instanceof TardisExteriorEntity tardis && tardis.getTardisId().equals(id)) tardis.syncDoorState(open);
+            });
+        }
     }
 
     public static void syncExterior(ServerLevel interior, java.util.UUID id) {
         net.minecraft.core.BlockPos door = TardisDimensionManager.interiorDoor(interior);
         TardisData data = TardisManager.get(interior.getServer(), id);
-        if (door != null && data != null && interior.getBlockEntity(door) instanceof InteriorDoorBlockEntity blockEntity) blockEntity.setExterior(data.exterior());
+        if (door != null && data != null && interior.getBlockEntity(door) instanceof InteriorDoorBlockEntity blockEntity) {
+            blockEntity.setExterior(data.exterior());
+            blockEntity.setDoorAnimation(data.doorAnimation());
+            interior.sendBlockUpdated(door, interior.getBlockState(door), interior.getBlockState(door), 3);
+        }
     }
 
     public static void ensureTop(Level level, net.minecraft.core.BlockPos pos) {
@@ -84,7 +98,7 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         java.util.UUID id = TardisDimensionManager.id(level.dimension());
         TardisData data = id == null ? null : TardisManager.get(level.getServer(), id);
-        if (data == null || !TardisAccessRegistry.canUse(id, player.getUUID(), data.ownerId())) return InteractionResult.FAIL;
+        if (data == null || data.travelState() != com.intothevortex.tardis.TardisTravelState.LANDED || !TardisAccessRegistry.canUse(id, player.getUUID(), data.ownerId())) return InteractionResult.FAIL;
         boolean key = stack.is(ModItems.TARDIS_KEY);
         if (key) {
             if (!data.ownerId().equals(player.getUUID())) return InteractionResult.FAIL;
@@ -113,7 +127,20 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
     }
 
     public static void markArrival(ServerPlayer player) {
-        ARRIVAL_COOLDOWNS.put(player.getUUID(), ((ServerLevel) player.level()).getGameTime() + 20L);
+        ARRIVAL_COOLDOWNS.put(player.getUUID(), ((ServerLevel) player.level()).getGameTime() + 100L);
+        TardisTeleportCooldowns.arm(player.level().getServer(), player.getUUID());
+    }
+
+    public static void tickExits(net.minecraft.server.MinecraftServer server) {
+        java.util.List<ServerLevel> levels = new java.util.ArrayList<>();
+        server.getAllLevels().forEach(level -> {
+            if (TardisDimensionManager.id(level.dimension()) != null) levels.add(level);
+        });
+        for (ServerLevel level : levels) {
+            net.minecraft.core.BlockPos door = TardisDimensionManager.interiorDoor(level);
+            if (door == null) continue;
+            for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, new net.minecraft.world.phys.AABB(door).inflate(1.25D, 0.25D, 1.25D))) tryExit(level.getBlockState(door), level, door, player, true);
+        }
     }
 
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
@@ -157,6 +184,10 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
     static void tryExit(BlockState state, Level level, net.minecraft.core.BlockPos pos, Entity entity, boolean moving) {
         if (!(level instanceof ServerLevel world) || !(entity instanceof ServerPlayer player)) return;
         if (!moving) return;
+        Direction facing = state.getValue(FACING);
+        double relative = (player.getX() - (pos.getX() + 0.5D)) * facing.getStepX() + (player.getZ() - (pos.getZ() + 0.5D)) * facing.getStepZ();
+        if (relative >= 0.0D) return;
+        if (TardisTeleportCooldowns.active(world.getServer(), player.getUUID())) return;
         Long cooldown = ARRIVAL_COOLDOWNS.get(player.getUUID());
         if (cooldown != null) {
             if (world.getGameTime() < cooldown) return;
@@ -165,17 +196,26 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         java.util.UUID id = TardisDimensionManager.id(world.dimension());
         if (id == null) return;
         TardisData data = TardisManager.get(world.getServer(), id);
-        if (data == null || data.locked() || !data.doorOpen()) return;
+        if (data == null || data.travelState() != com.intothevortex.tardis.TardisTravelState.LANDED || data.locked() || !data.doorOpen()) return;
         if (!TardisAccessRegistry.canUse(id, player.getUUID(), data.ownerId())) return;
         ServerLevel exterior = world.getServer().getLevel(TardisDimensionManager.parseDimension(data.dimension()));
         if (exterior == null) return;
+        if (!PENDING_EXITS.add(player.getUUID())) return;
         double yaw = Math.toRadians(data.yaw());
         double x = data.position().getX() + 0.5D - Math.sin(yaw) * 1.8D;
         double z = data.position().getZ() + 0.5D + Math.cos(yaw) * 1.8D;
-        markArrival(player);
-        net.minecraft.world.level.portal.TeleportTransition transition = new net.minecraft.world.level.portal.TeleportTransition(exterior, new net.minecraft.world.phys.Vec3(x, data.position().getY(), z), net.minecraft.world.phys.Vec3.ZERO, net.minecraft.util.Mth.wrapDegrees(data.yaw() + 180.0F), 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING);
+        float exitYaw = net.minecraft.util.Mth.wrapDegrees(data.yaw() + 180.0F);
         world.getServer().schedule(new net.minecraft.server.TickTask(world.getServer().getTickCount() + 1, () -> {
-            if (!player.isRemoved() && player.connection != null && player.level() == world) player.teleport(transition);
+            try {
+                if (!player.isRemoved() && player.connection != null && player.level() == world) {
+                    if (!player.teleportTo(exterior, x, data.position().getY(), z, java.util.Set.of(), exitYaw, 0.0F, false)) throw new IllegalStateException("ServerPlayer.teleportTo returned false");
+                    markArrival(player);
+                }
+            } catch (RuntimeException exception) {
+                TardisTeleportCooldowns.clear(player.getUUID());
+            } finally {
+                PENDING_EXITS.remove(player.getUUID());
+            }
         }));
     }
 }

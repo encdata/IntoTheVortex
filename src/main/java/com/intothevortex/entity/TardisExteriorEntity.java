@@ -21,6 +21,8 @@ import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import com.intothevortex.sound.ModSounds;
 import com.intothevortex.tardis.DoorEvents;
+import com.intothevortex.tardis.TardisTravelState;
+import com.intothevortex.tardis.TardisTeleportCooldowns;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -37,6 +39,10 @@ public final class TardisExteriorEntity extends Entity {
     private static final EntityDataAccessor<Boolean> DOOR_OPEN = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DOOR_PROGRESS = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<String> EXTERIOR = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> TRAVEL_STATE = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Float> TRAVEL_PROGRESS = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<String> TRAVEL_ANIMATION = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> DOOR_ANIMATION = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
     private UUID tardisId = new UUID(0L, 0L);
     private final Set<UUID> playersInDoorway = new HashSet<>();
 
@@ -62,12 +68,24 @@ public final class TardisExteriorEntity extends Entity {
     public String getExterior() { return entityData.get(EXTERIOR); }
 
     public void setExterior(String exterior) { entityData.set(EXTERIOR, exterior); }
+    public TardisTravelState getTravelState() { return TardisTravelState.valueOf(entityData.get(TRAVEL_STATE)); }
+    public float getTravelProgress() { return entityData.get(TRAVEL_PROGRESS); }
+    public String getTravelAnimation() { return entityData.get(TRAVEL_ANIMATION); }
+    public String getDoorAnimation() { return entityData.get(DOOR_ANIMATION); }
+
+    public void syncDoorState(boolean open) {
+        entityData.set(DOOR_OPEN, open);
+    }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DOOR_OPEN, false);
         builder.define(DOOR_PROGRESS, 0.0F);
         builder.define(EXTERIOR, "intothevortex:default");
+        builder.define(TRAVEL_STATE, TardisTravelState.LANDED.name());
+        builder.define(TRAVEL_PROGRESS, 0.0F);
+        builder.define(TRAVEL_ANIMATION, "intothevortex:default");
+        builder.define(DOOR_ANIMATION, "intothevortex:door_swing");
     }
 
     @Override
@@ -87,6 +105,10 @@ public final class TardisExteriorEntity extends Entity {
         }
         TardisData tardis = TardisManager.get(serverPlayer.level().getServer(), tardisId);
         if (tardis == null) {
+            return InteractionResult.FAIL;
+        }
+        if (tardis.travelState() != TardisTravelState.LANDED) {
+            serverPlayer.sendSystemMessage(Component.literal("The TARDIS is currently in flight."));
             return InteractionResult.FAIL;
         }
         boolean owner = tardis.ownerId().equals(serverPlayer.getUUID());
@@ -152,8 +174,28 @@ public final class TardisExteriorEntity extends Entity {
             return;
         }
         TardisData tardis = TardisManager.get(serverLevel.getServer(), tardisId);
+        if (tardis == null) return;
+        entityData.set(TRAVEL_STATE, tardis.travelState().name());
+        entityData.set(TRAVEL_ANIMATION, tardis.travelState() == TardisTravelState.MAT ? tardis.matAnimation() : tardis.dematAnimation());
+        entityData.set(DOOR_ANIMATION, tardis.doorAnimation());
+        float travelProgress = switch (tardis.travelState()) {
+            case DEMAT -> {
+                var animation = com.intothevortex.exterior.TardisAnimationManager.getPhase(net.minecraft.resources.Identifier.parse(tardis.dematAnimation()));
+                yield Math.min(1.0F, tardis.phaseTicks() / (float) animation.ticks());
+            }
+            case MAT -> {
+                var animation = com.intothevortex.exterior.TardisAnimationManager.getPhase(net.minecraft.resources.Identifier.parse(tardis.matAnimation()));
+                yield Math.min(1.0F, tardis.phaseTicks() / (float) animation.ticks());
+            }
+            default -> 0.0F;
+        };
+        entityData.set(TRAVEL_PROGRESS, travelProgress);
+        if (tardis.travelState() == TardisTravelState.FLIGHT || (tardis.travelState() == TardisTravelState.MAT && !getUUID().equals(tardis.exteriorId()))) {
+            discard();
+            return;
+        }
         if (tardis != null) entityData.set(EXTERIOR, tardis.exterior());
-        boolean open = tardis != null && tardis.doorOpen() && !tardis.locked();
+        boolean open = tardis != null && tardis.travelState() == TardisTravelState.LANDED && tardis.doorOpen() && !tardis.locked();
         entityData.set(DOOR_OPEN, open);
         if (!open) {
             playersInDoorway.clear();
@@ -162,10 +204,10 @@ public final class TardisExteriorEntity extends Entity {
         Set<UUID> present = new HashSet<>();
         for (ServerPlayer player : serverLevel.getEntitiesOfClass(ServerPlayer.class, doorArea())) {
             present.add(player.getUUID());
+            if (TardisTeleportCooldowns.active(serverLevel.getServer(), player.getUUID())) continue;
             TardisData accessData = TardisManager.get(serverLevel.getServer(), tardisId);
             if (accessData == null || !TardisAccessRegistry.canUse(tardisId, player.getUUID(), accessData.ownerId())) continue;
             if (playersInDoorway.add(player.getUUID())) {
-                float arrivalYaw = net.minecraft.util.Mth.wrapDegrees(getYRot() + 180.0F);
                 LOGGER.info("Queued exterior entry for {} into TARDIS {}", player.getGameProfile().name(), tardisId);
                 TardisDimensionManager.whenInteriorReady(serverLevel.getServer(), tardisId, targetLevel -> {
                     TardisData readyData = TardisManager.get(serverLevel.getServer(), tardisId);
@@ -180,10 +222,19 @@ public final class TardisExteriorEntity extends Entity {
                         playersInDoorway.remove(player.getUUID());
                         return;
                     }
+                    net.minecraft.core.Direction doorFacing = targetLevel.getBlockState(doorPos).getValue(InteriorDoorBlock.FACING);
+                    float arrivalYaw = doorFacing.toYRot();
                     LOGGER.info("Teleporting {} into TARDIS {} at {}", player.getGameProfile().name(), tardisId, doorPos);
-                    InteriorDoorBlock.markArrival(player);
-                    ServerPlayNetworking.send(player, new RuntimeDimensionPayload(TardisDimensionManager.key(tardisId).identifier()));
-                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, TardisDimensionManager.interiorArrival(targetLevel, doorPos), net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+                    try {
+                        var arrival = TardisDimensionManager.interiorArrival(targetLevel, doorPos);
+                        if (!player.teleportTo(targetLevel, arrival.x, arrival.y, arrival.z, java.util.Set.of(), arrivalYaw, 0.0F, false)) throw new IllegalStateException("ServerPlayer.teleportTo returned false");
+                        InteriorDoorBlock.markArrival(player);
+                        playersInDoorway.remove(player.getUUID());
+                    } catch (RuntimeException exception) {
+                        playersInDoorway.remove(player.getUUID());
+                        TardisTeleportCooldowns.clear(player.getUUID());
+                        LOGGER.error("Exterior entry failed for {} into TARDIS {}", player.getGameProfile().name(), tardisId, exception);
+                    }
                 });
             }
         }

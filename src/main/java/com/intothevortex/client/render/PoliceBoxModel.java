@@ -27,7 +27,7 @@ public final class PoliceBoxModel extends EntityModel<TardisExteriorRenderState>
 	private final ModelPart leftdoor;
 
 	public PoliceBoxModel(ModelPart root) {
-		super(root, net.minecraft.client.renderer.rendertype.RenderTypes::entityCutout);
+		super(root, net.minecraft.client.renderer.rendertype.RenderTypes::entityTranslucent);
 		this.bone = root.getChild("bone");
 		this.sides = this.bone.getChild("sides");
 		this.roof = this.bone.getChild("roof");
@@ -164,9 +164,8 @@ meshDefinition,
 	@Override
 	public void setupAnim(TardisExteriorRenderState state) {
 		super.setupAnim(state);
-		com.intothevortex.exterior.AnimationDefinition animation = com.intothevortex.exterior.TardisAnimationManager.get(state.tardisId, com.intothevortex.exterior.ExteriorRegistry.DEFAULT_ID);
-		leftdoor.yRot = animation.closedLeft() + (animation.openLeft() - animation.closedLeft()) * state.doorProgress;
-		rightdoor.yRot = animation.closedRight() + (animation.openRight() - animation.closedRight()) * state.doorProgress;
+		com.intothevortex.exterior.AnimationDefinition animation = com.intothevortex.exterior.TardisAnimationManager.getDoor(net.minecraft.resources.Identifier.parse(state.doorAnimation));
+		leftdoor.yRot = animation.left(state.doorProgress);
+		rightdoor.yRot = animation.right(state.doorProgress);
 	}
 }
-
