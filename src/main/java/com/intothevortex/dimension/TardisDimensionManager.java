@@ -183,6 +183,13 @@ public final class TardisDimensionManager {
     }
 
     public static void tick(MinecraftServer server) {
+        java.util.List<UUID> readyIds = new java.util.ArrayList<>(INTERIOR_READY_CALLBACKS.keySet());
+        for (UUID readyId : readyIds) {
+            ServerLevel readyLevel = server.getLevel(key(readyId));
+            if (readyLevel == null || interiorDoor(readyLevel) == null) continue;
+            java.util.List<java.util.function.Consumer<ServerLevel>> callbacks = INTERIOR_READY_CALLBACKS.remove(readyId);
+            if (callbacks != null) callbacks.forEach(callback -> server.execute(() -> callback.accept(readyLevel)));
+        }
         java.util.List<ServerLevel> levels = new java.util.ArrayList<>();
         server.getAllLevels().forEach(levels::add);
         for (ServerLevel level : levels) {
