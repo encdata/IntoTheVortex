@@ -227,7 +227,7 @@ public final class TardisExteriorEntity extends Entity {
                     LOGGER.info("Teleporting {} into TARDIS {} at {}", player.getGameProfile().name(), tardisId, doorPos);
                     try {
                         var arrival = TardisDimensionManager.interiorArrival(targetLevel, doorPos);
-                        if (!player.teleportTo(targetLevel, arrival.x, arrival.y, arrival.z, java.util.Set.of(), arrivalYaw, 0.0F, false)) throw new IllegalStateException("ServerPlayer.teleportTo returned false");
+                        player.teleport(new net.minecraft.world.level.portal.TeleportTransition(targetLevel, arrival, net.minecraft.world.phys.Vec3.ZERO, arrivalYaw, 0.0F, java.util.Set.of(), net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
                         InteriorDoorBlock.markArrival(player);
                         playersInDoorway.remove(player.getUUID());
                     } catch (RuntimeException exception) {

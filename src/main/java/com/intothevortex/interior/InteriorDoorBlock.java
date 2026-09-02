@@ -208,7 +208,7 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         world.getServer().schedule(new net.minecraft.server.TickTask(world.getServer().getTickCount() + 1, () -> {
             try {
                 if (!player.isRemoved() && player.connection != null && player.level() == world) {
-                    if (!player.teleportTo(exterior, x, data.position().getY(), z, java.util.Set.of(), exitYaw, 0.0F, false)) throw new IllegalStateException("ServerPlayer.teleportTo returned false");
+                    player.teleport(new net.minecraft.world.level.portal.TeleportTransition(exterior, new net.minecraft.world.phys.Vec3(x, data.position().getY(), z), net.minecraft.world.phys.Vec3.ZERO, exitYaw, 0.0F, java.util.Set.of(), net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
                     markArrival(player);
                 }
             } catch (RuntimeException exception) {
