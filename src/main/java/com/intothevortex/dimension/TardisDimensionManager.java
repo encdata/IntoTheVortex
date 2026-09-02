@@ -88,7 +88,7 @@ public final class TardisDimensionManager {
             if (level.getBlockState(interiorDoor).getValue(com.intothevortex.interior.InteriorDoorBlock.OPEN) != open) level.setBlock(interiorDoor, level.getBlockState(interiorDoor).setValue(com.intothevortex.interior.InteriorDoorBlock.OPEN, open), 3);
         }
         com.intothevortex.interior.InteriorDoorBlock.syncExterior(level, id);
-        completeInteriorReady(id, level);
+        completeInteriorReady(server, id, level);
     }
 
     public static net.minecraft.core.BlockPos interiorDoor(ServerLevel level) {
@@ -100,15 +100,15 @@ public final class TardisDimensionManager {
     public static void whenInteriorReady(MinecraftServer server, UUID id, java.util.function.Consumer<ServerLevel> callback) {
         ServerLevel level = ensureLoaded(server, id);
         if (level != null && interiorDoor(level) != null) {
-            callback.accept(level);
+            server.execute(() -> callback.accept(level));
             return;
         }
         INTERIOR_READY_CALLBACKS.computeIfAbsent(id, ignored -> new ArrayList<>()).add(callback);
     }
 
-    private static void completeInteriorReady(UUID id, ServerLevel level) {
+    private static void completeInteriorReady(MinecraftServer server, UUID id, ServerLevel level) {
         java.util.List<java.util.function.Consumer<ServerLevel>> callbacks = INTERIOR_READY_CALLBACKS.remove(id);
-        if (callbacks != null) callbacks.forEach(callback -> callback.accept(level));
+        if (callbacks != null) callbacks.forEach(callback -> server.execute(() -> callback.accept(level)));
     }
 
     private static boolean hasInterior(ServerLevel level) {
