@@ -112,15 +112,7 @@ public final class TardisDimensionManager {
     }
 
     private static boolean hasInterior(ServerLevel level) {
-        int nonAir = 0;
-        for (int x = 0; x < 30; x++) {
-            for (int y = 0; y < 9; y++) {
-                for (int z = 0; z < 24; z++) {
-                    if (!level.getBlockState(INTERIOR_ORIGIN.offset(x, y, z)).isAir() && ++nonAir >= 128) return true;
-                }
-            }
-        }
-        return false;
+        return findInteriorDoor(level) != null;
     }
 
     private static net.minecraft.core.BlockPos findInteriorDoor(ServerLevel level) {
