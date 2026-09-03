@@ -43,7 +43,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         state.doorAnimation = entity.getDoorAnimation();
         state.powered = entity.isPowered();
     }
-
+//
     @Override
     public void submit(TardisExteriorRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState cameraState) {
         super.submit(state, poseStack, collector, cameraState);
