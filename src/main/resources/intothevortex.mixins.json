@@ -9,7 +9,9 @@
     "MappedRegistryAccessor"
   ],
   "client": [
-    "client.SkyRendererMixin"
+    "client.SkyRendererMixin",
+    "client.MouseHandlerMixin",
+    "client.KeyboardHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

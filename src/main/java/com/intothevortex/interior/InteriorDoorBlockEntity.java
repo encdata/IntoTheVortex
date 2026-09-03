@@ -16,6 +16,7 @@ public final class InteriorDoorBlockEntity extends BlockEntity {
     private String exterior = "intothevortex:default";
     private String doorAnimation = "intothevortex:door_swing";
     private float doorProgress;
+    private boolean powered;
 
     public InteriorDoorBlockEntity(BlockPos pos, BlockState state) {
         super(InteriorRegistry.DOOR_ENTITY, pos, state);
@@ -44,12 +45,15 @@ public final class InteriorDoorBlockEntity extends BlockEntity {
         doorProgress += (target - doorProgress) * 0.18F;
         return doorProgress;
     }
+    public boolean powered() { return powered; }
+    public void setPowered(boolean value) { powered = value; setChanged(); }
 
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
         exterior = input.getString("exterior").orElse("intothevortex:default");
         doorAnimation = input.getString("door_animation").orElse("intothevortex:door_swing");
+        powered = input.getBooleanOr("powered", false);
     }
 
     @Override
@@ -57,6 +61,7 @@ public final class InteriorDoorBlockEntity extends BlockEntity {
         super.saveAdditional(output);
         output.putString("exterior", exterior);
         output.putString("door_animation", doorAnimation);
+        output.putBoolean("powered", powered);
     }
 
     @Override

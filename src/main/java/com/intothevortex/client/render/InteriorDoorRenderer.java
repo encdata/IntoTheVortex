@@ -31,6 +31,7 @@ public final class InteriorDoorRenderer implements BlockEntityRenderer<InteriorD
         state.modelState.doorOpen = blockEntity.getBlockState().getValue(InteriorDoorBlock.OPEN);
         state.modelState.doorProgress = blockEntity.doorProgress();
         state.modelState.doorAnimation = blockEntity.doorAnimation();
+        state.powered = blockEntity.powered();
         state.modelState.lightCoords = state.lightCoords;
         state.modelState.outlineColor = 0;
     }
@@ -45,7 +46,7 @@ public final class InteriorDoorRenderer implements BlockEntityRenderer<InteriorD
         poseStack.scale(1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.5F, 0.0F);
         collector.submitModel(model, state.modelState, poseStack, definition.interiorTexture(), state.lightCoords, OverlayTexture.NO_OVERLAY, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
-        if (definition.interiorEmission() != null) collector.submitModel(model, state.modelState, poseStack, definition.interiorEmission(), 15728880, OverlayTexture.NO_OVERLAY, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
+        if (state.powered && definition.interiorEmission() != null) collector.submitModel(model, state.modelState, poseStack, definition.interiorEmission(), 15728880, OverlayTexture.NO_OVERLAY, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
         poseStack.popPose();
     }
 }

@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.ItemStack;
@@ -86,7 +87,26 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         if (door != null && data != null && interior.getBlockEntity(door) instanceof InteriorDoorBlockEntity blockEntity) {
             blockEntity.setExterior(data.exterior());
             blockEntity.setDoorAnimation(data.doorAnimation());
+            blockEntity.setPowered(data.powered());
             interior.sendBlockUpdated(door, interior.getBlockState(door), interior.getBlockState(door), 3);
+        }
+    }
+
+    public static void syncPower(ServerLevel world, java.util.UUID id, boolean powered) {
+        ServerLevel interior = TardisDimensionManager.ensureLoaded(world.getServer(), id);
+        if (interior != null) {
+            BlockPos door = TardisDimensionManager.interiorDoor(interior);
+            if (door != null && interior.getBlockEntity(door) instanceof InteriorDoorBlockEntity blockEntity) {
+                blockEntity.setPowered(powered);
+                interior.sendBlockUpdated(door, interior.getBlockState(door), interior.getBlockState(door), 3);
+            }
+        }
+        TardisData data = TardisManager.get(world.getServer(), id);
+        if (data != null) {
+            ServerLevel exterior = world.getServer().getLevel(TardisDimensionManager.parseDimension(data.dimension()));
+            if (exterior != null) exterior.getAllEntities().forEach(entity -> {
+                if (entity instanceof TardisExteriorEntity tardis && tardis.getTardisId().equals(id)) tardis.syncPowered(powered);
+            });
         }
     }
 

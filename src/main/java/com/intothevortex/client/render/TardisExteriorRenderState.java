@@ -16,4 +16,5 @@ public final class TardisExteriorRenderState extends EntityRenderState {
     public String doorAnimation = "intothevortex:door_swing";
     public float consoleThrottle;
     public float consoleHandbrake;
+    public boolean powered;
 }

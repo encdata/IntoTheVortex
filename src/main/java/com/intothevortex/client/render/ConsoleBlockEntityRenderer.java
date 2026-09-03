@@ -28,6 +28,7 @@ public final class ConsoleBlockEntityRenderer implements BlockEntityRenderer<Con
     public void extractRenderState(ConsoleBlockEntity blockEntity, ConsoleRenderState state, float tickDelta, net.minecraft.world.phys.Vec3 cameraPos, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(blockEntity, state, tickDelta, cameraPos, breakProgress);
         state.console = blockEntity.console();
+        state.powered = blockEntity.powered();
         state.facing = blockEntity.getBlockState().getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
         state.modelState.consoleThrottle = blockEntity.controlValue("throttle");
         state.modelState.consoleHandbrake = blockEntity.controlValue("handbrake");
@@ -43,8 +44,9 @@ public final class ConsoleBlockEntityRenderer implements BlockEntityRenderer<Con
         poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
         poseStack.translate(0.5F, -1.5F, -0.5F);
         poseStack.mulPose(Axis.YN.rotationDegrees(180.0F));
+        poseStack.mulPose(Axis.YP.rotationDegrees(state.facing.toYRot()));
         collector.submitModel(model, state.modelState, poseStack, RenderTypes.entityCutout(definition.texture()), state.lightCoords, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
-        if (definition.emission() != null) collector.submitModel(model, state.modelState, poseStack, RenderTypes.entityCutout(definition.emission()), 15728880, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
+        if (state.powered && definition.emission() != null) collector.submitModel(model, state.modelState, poseStack, RenderTypes.entityTranslucentEmissive(definition.emission()), 15728880, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
         poseStack.popPose();
     }
 }

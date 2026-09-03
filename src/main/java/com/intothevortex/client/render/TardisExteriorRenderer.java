@@ -41,6 +41,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         state.travelProgress = entity.getTravelProgress();
         state.travelAnimation = entity.getTravelAnimation();
         state.doorAnimation = entity.getDoorAnimation();
+        state.powered = entity.isPowered();
     }
 
     @Override
@@ -63,7 +64,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         var model = models.computeIfAbsent(definition.model(), TardisModelRegistry::exterior);
         int renderColor = ((int) (Math.max(0.0F, Math.min(1.0F, state.travelOpacity)) * 255.0F) << 24) | 0xFFFFFF;
         collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucent(definition.texture()), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
-        if (definition.emission() != null) {
+        if (state.powered && definition.emission() != null) {
             collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucentEmissive(definition.emission()), 15728880, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
         }
         poseStack.popPose();

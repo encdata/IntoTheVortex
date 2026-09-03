@@ -2,10 +2,14 @@ package com.intothevortex.interior;
 
 public enum ConsoleInputType {
     BUTTON,
-    TOGGLE,
+    SWITCH,
     LEVER,
-    VALVE,
     KNOB,
+    MOMENTARY_BUTTON,
+    KEY_SWITCH,
+    JOYSTICK,
+    TOGGLE,
+    VALVE,
     DIAL,
     SLIDER
 }

@@ -2,8 +2,10 @@ package com.intothevortex;
 
 import com.intothevortex.command.IntoTheVortexCommands;
 import com.intothevortex.network.RuntimeDimensionPayload;
+import com.intothevortex.network.ControlValuePayload;
 import com.intothevortex.network.RuntimeDimensionSync;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import com.intothevortex.dimension.RuntimeDimensionRestoration;
 import com.intothevortex.dimension.TardisDimensionManager;
@@ -21,6 +23,7 @@ import com.intothevortex.exterior.TardisAnimationManager;
 import com.intothevortex.tardis.TardisTravelManager;
 import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.interior.ConsoleRegistry;
+import com.intothevortex.interior.ControlRegistry;
 
 public final class IntoTheVortex implements ModInitializer {
     public static final String MOD_ID = "intothevortex";
@@ -32,6 +35,7 @@ public final class IntoTheVortex implements ModInitializer {
         TardisAnimationManager.initializeTravel();
         ModEntityTypes.initialize();
         InteriorRegistry.initialize();
+        ControlRegistry.initialize();
         ConsoleRegistry.initialize();
         IntoTheVortexCommands.initialize();
         ModBlocks.initialize();
@@ -40,6 +44,10 @@ public final class IntoTheVortex implements ModInitializer {
         ModBlocks.initialize();
 
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ControlValuePayload.TYPE, ControlValuePayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(ControlValuePayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.setControlValue(context.player(), payload.controlId(), payload.value(), payload.released());
+        }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             server.execute(() -> server.getAllLevels().forEach(level -> {
                 if (TardisDimensionManager.id(level.dimension()) != null) RuntimeDimensionSync.sendCreate(server, handler.getPlayer(), level.dimension());

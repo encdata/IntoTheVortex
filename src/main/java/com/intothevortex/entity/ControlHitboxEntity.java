@@ -17,9 +17,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import java.util.UUID;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 
 public final class ControlHitboxEntity extends Entity {
+    private static final EntityDataAccessor<BlockPos> CONSOLE_POS = SynchedEntityData.defineId(ControlHitboxEntity.class, EntityDataSerializers.BLOCK_POS);
+    private static final EntityDataAccessor<String> CONTROL_ID = SynchedEntityData.defineId(ControlHitboxEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> CONSOLE_UUID = SynchedEntityData.defineId(ControlHitboxEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Float> CONTROL_WIDTH = SynchedEntityData.defineId(ControlHitboxEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> CONTROL_HEIGHT = SynchedEntityData.defineId(ControlHitboxEntity.class, EntityDataSerializers.FLOAT);
     private BlockPos consolePos = BlockPos.ZERO;
@@ -27,6 +31,7 @@ public final class ControlHitboxEntity extends Entity {
     private UUID consoleEntityId;
     private float controlWidth = 0.125F;
     private float controlHeight = 0.125F;
+    private float value;
 
     public ControlHitboxEntity(EntityType<? extends ControlHitboxEntity> type, Level level) { super(type, level); setNoGravity(true); }
 
@@ -37,16 +42,34 @@ public final class ControlHitboxEntity extends Entity {
         this.consoleEntityId = consoleEntityId;
         this.controlWidth = definition.width();
         this.controlHeight = definition.height();
+        entityData.set(CONSOLE_POS, consolePos);
+        entityData.set(CONTROL_ID, controlId);
+        entityData.set(CONSOLE_UUID, consoleEntityId == null ? "" : consoleEntityId.toString());
         entityData.set(CONTROL_WIDTH, controlWidth);
         entityData.set(CONTROL_HEIGHT, controlHeight);
         setPos(consolePos.getX() + 0.5D + definition.position().x(), consolePos.getY() + 0.5D + definition.position().y(), consolePos.getZ() + 0.5D + definition.position().z());
         refreshDimensions();
     }
 
-    public BlockPos consolePos() { return consolePos; }
-    public String controlId() { return controlId; }
+    public BlockPos consolePos() { return entityData.get(CONSOLE_POS); }
+    public String controlId() { return entityData.get(CONTROL_ID); }
+    public UUID consoleUuid() {
+        String value = entityData.get(CONSOLE_UUID);
+        return value.isEmpty() ? null : UUID.fromString(value);
+    }
+    public ConsoleControlDefinition definition() {
+        if (!(level().getBlockEntity(consolePos) instanceof com.intothevortex.interior.ConsoleBlockEntity console)) return null;
+        return console.definition(controlId);
+    }
+    public float value() {
+        if (!(level().getBlockEntity(consolePos) instanceof com.intothevortex.interior.ConsoleBlockEntity console)) return value;
+        return console.controlValue(controlId);
+    }
 
     @Override protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(CONSOLE_POS, BlockPos.ZERO);
+        builder.define(CONTROL_ID, "");
+        builder.define(CONSOLE_UUID, "");
         builder.define(CONTROL_WIDTH, 0.125F);
         builder.define(CONTROL_HEIGHT, 0.125F);
     }
@@ -55,6 +78,11 @@ public final class ControlHitboxEntity extends Entity {
         controlId = input.getString("control").orElse("");
         controlWidth = input.getFloatOr("width", 0.125F);
         controlHeight = input.getFloatOr("height", 0.125F);
+        value = input.getFloatOr("value", 0.0F);
+        consoleEntityId = input.read("console_uuid", net.minecraft.core.UUIDUtil.CODEC).orElse(null);
+        entityData.set(CONSOLE_POS, consolePos);
+        entityData.set(CONTROL_ID, controlId);
+        entityData.set(CONSOLE_UUID, consoleEntityId == null ? "" : consoleEntityId.toString());
         entityData.set(CONTROL_WIDTH, controlWidth);
         entityData.set(CONTROL_HEIGHT, controlHeight);
         refreshDimensions();
@@ -64,6 +92,8 @@ public final class ControlHitboxEntity extends Entity {
         output.putString("control", controlId);
         output.putFloat("width", controlWidth);
         output.putFloat("height", controlHeight);
+        output.putFloat("value", value);
+        if (consoleEntityId != null) output.store("console_uuid", net.minecraft.core.UUIDUtil.CODEC, consoleEntityId);
     }
     @Override public boolean isPickable() { return true; }
     @Override public boolean shouldRenderAtSqrDistance(double distance) { return true; }
@@ -81,6 +111,6 @@ public final class ControlHitboxEntity extends Entity {
     @Override public void tick() {
         super.tick();
         if (level().isClientSide()) return;
-        if (!(level() instanceof ServerLevel server) || !(server.getBlockEntity(consolePos) instanceof com.intothevortex.interior.ConsoleBlockEntity)) discard();
+        if (!(level() instanceof ServerLevel server) || !(server.getBlockEntity(consolePos) instanceof com.intothevortex.interior.ConsoleBlockEntity console) || !console.consoleUuid().equals(consoleEntityId)) discard();
     }
 }

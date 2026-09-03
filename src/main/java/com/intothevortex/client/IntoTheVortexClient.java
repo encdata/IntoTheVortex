@@ -20,6 +20,7 @@ public final class IntoTheVortexClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         TardisModelRegistry.initialize();
+        ControlInputManager.initialize();
         EntityRenderers.register(ModEntityTypes.TARDIS_EXTERIOR, TardisExteriorRenderer::new);
         EntityRenderers.register(ModEntityTypes.CONTROL_HITBOX, ControlHitboxRenderer::new);
         BlockEntityRendererRegistry.register(InteriorRegistry.DOOR_ENTITY, context -> new InteriorDoorRenderer());

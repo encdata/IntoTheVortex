@@ -43,6 +43,7 @@ public final class TardisExteriorEntity extends Entity {
     private static final EntityDataAccessor<Float> TRAVEL_PROGRESS = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<String> TRAVEL_ANIMATION = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DOOR_ANIMATION = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Boolean> POWERED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
     private UUID tardisId = new UUID(0L, 0L);
     private final Set<UUID> playersInDoorway = new HashSet<>();
 
@@ -72,6 +73,8 @@ public final class TardisExteriorEntity extends Entity {
     public float getTravelProgress() { return entityData.get(TRAVEL_PROGRESS); }
     public String getTravelAnimation() { return entityData.get(TRAVEL_ANIMATION); }
     public String getDoorAnimation() { return entityData.get(DOOR_ANIMATION); }
+    public boolean isPowered() { return entityData.get(POWERED); }
+    public void syncPowered(boolean value) { entityData.set(POWERED, value); }
 
     public void syncDoorState(boolean open) {
         entityData.set(DOOR_OPEN, open);
@@ -86,6 +89,7 @@ public final class TardisExteriorEntity extends Entity {
         builder.define(TRAVEL_PROGRESS, 0.0F);
         builder.define(TRAVEL_ANIMATION, "intothevortex:default");
         builder.define(DOOR_ANIMATION, "intothevortex:door_swing");
+        builder.define(POWERED, false);
     }
 
     @Override
@@ -178,6 +182,7 @@ public final class TardisExteriorEntity extends Entity {
         entityData.set(TRAVEL_STATE, tardis.travelState().name());
         entityData.set(TRAVEL_ANIMATION, tardis.travelState() == TardisTravelState.MAT ? tardis.matAnimation() : tardis.dematAnimation());
         entityData.set(DOOR_ANIMATION, tardis.doorAnimation());
+        entityData.set(POWERED, tardis.powered());
         float travelProgress = switch (tardis.travelState()) {
             case DEMAT -> {
                 var animation = com.intothevortex.exterior.TardisAnimationManager.getPhase(net.minecraft.resources.Identifier.parse(tardis.dematAnimation()));
