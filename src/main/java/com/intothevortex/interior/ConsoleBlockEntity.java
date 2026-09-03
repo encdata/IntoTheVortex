@@ -47,11 +47,12 @@ public final class ConsoleBlockEntity extends BlockEntity {
     public boolean refueling() { return refueling; }
     public ConsoleControlDefinition definition(String id) { return ConsoleRegistry.get(net.minecraft.resources.Identifier.parse(console)).controls().stream().filter(control -> control.id().equals(id)).findFirst().orElse(null); }
 
-    public void setControlValue(Player player, String id, float value, boolean released) {
+    public void setAuthoritativeValue(Player player, String id, float value, boolean released) {
         if (!(level instanceof ServerLevel server)) return;
         ConsoleControlDefinition definition = definition(id);
         if (definition == null || !ControlRegistry.supports(id, definition.inputType())) return;
         float bounded = Math.clamp(value, definition.minimum(), definition.maximum());
+        if (id.equals("handbrake")) bounded = bounded >= 0.5F ? 1.0F : 0.0F;
         if (released && definition.inputType() == ConsoleInputType.MOMENTARY_BUTTON) bounded = 0.0F;
         controlValues.put(id, bounded);
         setChanged();
@@ -59,59 +60,84 @@ public final class ConsoleBlockEntity extends BlockEntity {
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal(id + ": " + String.format(java.util.Locale.ROOT, "%.2f", bounded)), true);
     }
 
+    public void setControlValue(Player player, String id, float value, boolean released) {
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        if (!Float.isFinite(value)) return;
+        ControlUseContext context = ControlUseContext.resolve(serverPlayer, this, id);
+        if (context == null || context.validate() != InteractionResult.SUCCESS) return;
+        ControlCapability capability = released ? ControlCapability.RELEASE : context.definition().inputType() == ConsoleInputType.MOMENTARY_BUTTON ? ControlCapability.PRESS_DOWN : ControlCapability.DRAG;
+        if (!context.registered().capabilities().contains(capability)) return;
+        InteractionResult result = context.registered().behavior().onDrag(context, value);
+        if (result == InteractionResult.SUCCESS) setAuthoritativeValue(player, id, value, released);
+    }
+
+    public void stepControl(Player player, String id, float direction) {
+        if (direction != -1.0F && direction != 1.0F) return;
+        ControlMode mode = direction > 0.0F ? ControlMode.RIGHT_CLICK_UP : ControlMode.LEFT_CLICK_DOWN;
+        if (!ControlRegistry.supports(id, mode) || !(player instanceof ServerPlayer serverPlayer)) return;
+        ControlUseContext context = ControlUseContext.resolve(serverPlayer, this, id);
+        if (context == null || context.validate() != InteractionResult.SUCCESS) return;
+        InteractionResult result = direction > 0.0F ? context.registered().behavior().onPress(context.withInputDelta(direction)) : context.registered().behavior().onSecondaryPress(context.withInputDelta(direction));
+        if (result == InteractionResult.FAILED_INVALID_CONTROL_STATE) result = context.registered().behavior().onPress(context.withInputDelta(direction));
+        if (result != InteractionResult.SUCCESS) serverPlayer.sendSystemMessage(Component.literal(result.name()), true);
+    }
+
     public void beginControlInput(Player player, String id) {
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        ControlUseContext context = ControlUseContext.resolve(serverPlayer, this, id);
+        if (context == null || context.validate() != InteractionResult.SUCCESS || !context.registered().capabilities().contains(ControlCapability.BUTTON)) return;
+        InteractionResult result = context.registered().behavior().onPress(context);
+        if (result != InteractionResult.SUCCESS) serverPlayer.sendSystemMessage(Component.literal(result.name()), true);
+    }
+
+    public void setPowered(Player player, boolean value) {
         if (!(level instanceof ServerLevel server)) return;
-        ConsoleControlDefinition definition = definition(id);
-        if (definition == null || !ControlRegistry.supports(id, definition.inputType())) return;
-        if (id.equals("door")) {
-            InteriorPropBlock.toggleDoor(server, worldPosition, player);
-            return;
+        powered = value;
+        controlValues.put("power", value ? 1.0F : 0.0F);
+        java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
+        TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
+        if (data != null) {
+            TardisManager.save(server.getServer(), data.withPowered(value));
+            InteriorDoorBlock.syncPower(server, tardisId, value);
         }
-        if (id.equals("door_lock")) {
-            if (player.getMainHandItem().is(com.intothevortex.item.ModItems.TARDIS_KEY)) {
-                java.util.UUID tardisId = com.intothevortex.dimension.TardisDimensionManager.id(server.dimension());
-                TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
-                if (data != null && data.ownerId().equals(player.getUUID())) {
-                    boolean locked = !data.locked();
-                    TardisManager.save(server.getServer(), data.withLocked(locked).withDoorOpen(locked ? false : data.doorOpen()));
-                    if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Door lock: " + (locked ? "Locked" : "Unlocked")), true);
-                }
-            }
-            return;
-        }
-        if (id.equals("power")) {
-            powered = !powered;
-            controlValues.put(id, powered ? 1.0F : 0.0F);
-            java.util.UUID tardisId = com.intothevortex.dimension.TardisDimensionManager.id(server.dimension());
-            TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
-            if (data != null) {
-                TardisManager.save(server.getServer(), data.withPowered(powered));
-                InteriorDoorBlock.syncPower(server, tardisId, powered);
-            }
-            setChanged();
-            server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-            if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Power: " + (powered ? "On" : "Off")), true);
-            return;
-        }
-        if (id.equals("refueler")) {
-            java.util.UUID tardisId = com.intothevortex.dimension.TardisDimensionManager.id(server.dimension());
-            TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
-            if (data != null && data.travelState() == com.intothevortex.tardis.TardisTravelState.LANDED && controlValue("handbrake") >= 0.5F) {
-                refueling = !refueling;
-                controlValues.put(id, refueling ? 1.0F : 0.0F);
-                TardisManager.save(server.getServer(), data.withRefueling(refueling));
-                setChanged();
-                server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-                if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Refueling: " + (refueling ? "On" : "Off")), true);
-            }
-            return;
-        }
-        float oldValue = controlValues.getOrDefault(id, 0.0F);
-        float value = definition.inputType() == ConsoleInputType.SWITCH || definition.inputType() == ConsoleInputType.KEY_SWITCH ? (oldValue >= 0.5F ? 0.0F : 1.0F) : oldValue;
-        controlValues.put(id, value);
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-        if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal(id + ": " + String.format(java.util.Locale.ROOT, "%.2f", value)), true);
+        if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Power: " + (value ? "On" : "Off")), true);
+    }
+
+    public void setRefueling(Player player, boolean value) {
+        if (!(level instanceof ServerLevel server)) return;
+        refueling = value;
+        controlValues.put("refueler", value ? 1.0F : 0.0F);
+        java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
+        TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
+        if (data != null) TardisManager.save(server.getServer(), data.withRefueling(value));
+        setChanged();
+        server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Refueling: " + (value ? "On" : "Off")), true);
+    }
+
+    public void setHandbrakeEngaged(Player player, boolean value) {
+        if (!(level instanceof ServerLevel server)) return;
+        controlValues.put("handbrake", value ? 1.0F : 0.0F);
+        java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
+        TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
+        if (data != null) TardisManager.save(server.getServer(), data.withFlightControls(data.getThrottleStage(), value));
+        setChanged();
+        server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Handbrake: " + (value ? "Engaged" : "Released")), true);
+    }
+
+    public void setThrottleStage(Player player, int value) {
+        if (!(level instanceof ServerLevel server)) return;
+        int stage = Math.clamp(value, 0, 4);
+        controlValues.put("throttle", (float) stage);
+        java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
+        TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
+        if (data != null) TardisManager.save(server.getServer(), data.withFlightControls(stage, data.isHandbrakeEngaged()));
+        setChanged();
+        server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Throttle: " + stage), true);
     }
 
     public void createHitboxes() {
@@ -147,6 +173,8 @@ public final class ConsoleBlockEntity extends BlockEntity {
                 if (data != null) {
                     powered = data.powered();
                     refueling = data.refueling();
+                    controlValues.put("throttle", (float) data.getThrottleStage());
+                    controlValues.put("handbrake", data.isHandbrakeEngaged() ? 1.0F : 0.0F);
                 }
                 createHitboxes();
             });

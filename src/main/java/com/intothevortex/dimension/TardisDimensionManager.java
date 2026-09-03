@@ -276,6 +276,7 @@ public final class TardisDimensionManager {
             java.nio.file.Files.deleteIfExists(server.getWorldPath(LevelResource.ROOT).resolve("IntoTheVortex").resolve(id + ".json"));
             EMPTY_TICKS.remove(id);
             INTERIOR_READY_CALLBACKS.remove(id);
+            com.intothevortex.network.TardisFlightSync.forget(id);
             return true;
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to delete TARDIS dimension " + id, exception);

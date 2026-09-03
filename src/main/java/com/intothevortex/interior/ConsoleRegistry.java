@@ -15,7 +15,7 @@ public final class ConsoleRegistry {
 
     public static void initialize() {
         register(new ConsoleDefinition(TOYOTA, id("interior/toyota"), id("textures/blockentities/consoles/toyota_default.png"), id("textures/blockentities/consoles/toyota_emission.png"), java.util.List.of(
-                control("throttle", ConsoleInputType.LEVER, 0.440625F, 0.575F, 1.435938F, 0.2125F, 0.2F, "throttle"),
+                control("throttle", ConsoleInputType.LEVER, 0.440625F, 0.575F, 1.435938F, 0.2125F, 0.2F, "throttle", 0.0F, 4.0F),
                 control("handbrake", ConsoleInputType.LEVER, -0.525781F, 0.5625F, 1.4125F, 0.2F, 0.15F, "handbrake"),
                 control("auto_pilot", ConsoleInputType.SWITCH, -0.396094F, 0.6500F, 1.053125F, 0.1125F, 0.1F, "autopilot"),
                 control("door", ConsoleInputType.BUTTON, -0.377344F, 0.5875F, -1.398438F, 0.1625F, 0.175F, "door_control"),
@@ -53,8 +53,12 @@ public final class ConsoleRegistry {
     }
 
     private static ConsoleControlDefinition control(String id, ConsoleInputType type, float x, float y, float z, float width, float height, String modelPart) {
+        return control(id, type, x, y, z, width, height, modelPart, 0.0F, 1.0F);
+    }
+
+    private static ConsoleControlDefinition control(String id, ConsoleInputType type, float x, float y, float z, float width, float height, String modelPart, float minimum, float maximum) {
         if (!ControlRegistry.supports(id, type)) throw new IllegalArgumentException("Unsupported control type " + type + " for " + id);
-        return new ConsoleControlDefinition(id, type, new Vector3f(x, y, z), width, height, modelPart);
+        return new ConsoleControlDefinition(id, type, new Vector3f(x, y, z), width, height, modelPart, minimum, maximum);
     }
 
     private static Identifier id(String path) { return Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, path); }

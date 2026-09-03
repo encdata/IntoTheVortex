@@ -3,8 +3,11 @@ package com.intothevortex.client;
 import com.intothevortex.entity.ControlHitboxEntity;
 import com.intothevortex.interior.ConsoleControlDefinition;
 import com.intothevortex.interior.ConsoleInputType;
+import com.intothevortex.interior.ControlMode;
+import com.intothevortex.interior.ControlRegistry;
 import com.intothevortex.network.ControlValuePayload;
 import com.intothevortex.network.ControlActivatePayload;
+import com.intothevortex.network.ControlStepPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -22,6 +25,7 @@ public final class ControlInputManager {
     private static int activeButton = -1;
     private static boolean consumesCamera;
     private static boolean movementLogged;
+    private static boolean dragMoved;
     private static final KeyMapping MOVE_CAMERA = new KeyMapping("key.intothevortex.hold_move_camera", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("intothevortex", "controls")));
 
     private ControlInputManager() {}
@@ -47,6 +51,13 @@ public final class ControlInputManager {
             if (action == GLFW.GLFW_RELEASE && button == activeButton) stop();
             return true;
         }
+        if (action == GLFW.GLFW_PRESS && (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) && minecraft.crosshairPickEntity instanceof ControlHitboxEntity control) {
+            ConsoleControlDefinition next = control.definition();
+            if (next != null && (button == GLFW.GLFW_MOUSE_BUTTON_LEFT ? ControlRegistry.supports(control.controlId(), ControlMode.LEFT_CLICK_DOWN) : ControlRegistry.supports(control.controlId(), ControlMode.RIGHT_CLICK_UP)) && (!isDragControl(next) || button == GLFW.GLFW_MOUSE_BUTTON_LEFT)) {
+                ClientPlayNetworking.send(new ControlStepPayload(control.consolePos(), control.controlId(), button == GLFW.GLFW_MOUSE_BUTTON_LEFT ? -1.0F : 1.0F));
+                return true;
+            }
+        }
         if (action == GLFW.GLFW_PRESS && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && minecraft.crosshairPickEntity instanceof ControlHitboxEntity control) {
             startFromEntity(control);
             if (active != null && isClickControl(definition)) ClientPlayNetworking.send(new ControlActivatePayload(control.consolePos(), control.controlId()));
@@ -62,7 +73,9 @@ public final class ControlInputManager {
         if (definition.inputType() == ConsoleInputType.LEVER) value = clamp(value - (float) dy / 160.0F, definition);
         if (definition.inputType() == ConsoleInputType.KNOB || definition.inputType() == ConsoleInputType.KEY_SWITCH) value = clamp(value + (float) dx / 160.0F, definition);
         if (definition.inputType() == ConsoleInputType.JOYSTICK) value = clamp(value + (float) dx / 180.0F, definition);
+        if (active.controlId().equals("handbrake")) value = value >= 0.5F ? 1.0F : 0.0F;
         if (old != value) send(active, value, false);
+        if (dx != 0.0D || dy != 0.0D) dragMoved = true;
         if (!movementLogged && (dx != 0.0D || dy != 0.0D)) {
             movementLogged = true;
             LOGGER.info("Control drag movement received: id={}, dx={}, dy={}, value={}", active.controlId(), dx, dy, value);
@@ -90,6 +103,7 @@ public final class ControlInputManager {
         activeButton = GLFW.GLFW_MOUSE_BUTTON_RIGHT;
         consumesCamera = isDragControl(definition);
         movementLogged = false;
+        dragMoved = false;
         LOGGER.info("Control hold started: id={}, type={}, pos={}, drag={}, dimension={}", control.controlId(), definition.inputType(), control.consolePos(), consumesCamera, control.level().dimension().identifier());
         if (definition.inputType() == ConsoleInputType.MOMENTARY_BUTTON) send(active, 1.0F, false);
     }
@@ -106,6 +120,9 @@ public final class ControlInputManager {
 
     private static void stop() {
         if (active != null) LOGGER.info("Control hold stopped: id={}, value={}", active.controlId(), value);
+        if (active != null && definition != null && !dragMoved && ControlRegistry.supports(active.controlId(), ControlMode.RIGHT_CLICK_UP)) {
+            ClientPlayNetworking.send(new ControlStepPayload(active.consolePos(), active.controlId(), 1.0F));
+        }
         release();
     }
 

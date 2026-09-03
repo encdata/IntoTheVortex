@@ -4,6 +4,8 @@ import com.intothevortex.command.IntoTheVortexCommands;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import com.intothevortex.network.ControlValuePayload;
 import com.intothevortex.network.ControlActivatePayload;
+import com.intothevortex.network.ControlStepPayload;
+import com.intothevortex.network.TardisFlightPayload;
 import com.intothevortex.network.RuntimeDimensionSync;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -22,6 +24,8 @@ import com.intothevortex.block.ModBlocks;
 import com.intothevortex.sound.ModSounds;
 import com.intothevortex.exterior.TardisAnimationManager;
 import com.intothevortex.tardis.TardisTravelManager;
+import com.intothevortex.tardis.TardisFuelManager;
+import com.intothevortex.tardis.TardisManager;
 import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.interior.ConsoleRegistry;
 import com.intothevortex.interior.ControlRegistry;
@@ -46,17 +50,30 @@ public final class IntoTheVortex implements ModInitializer {
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ControlValuePayload.TYPE, ControlValuePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ControlActivatePayload.TYPE, ControlActivatePayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ControlStepPayload.TYPE, ControlStepPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(TardisFlightPayload.TYPE, TardisFlightPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ControlValuePayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (!Float.isFinite(payload.value()) || payload.controlId().length() > 64) return;
             if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
             if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.setControlValue(context.player(), payload.controlId(), payload.value(), payload.released());
         }));
         ServerPlayNetworking.registerGlobalReceiver(ControlActivatePayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (payload.controlId().length() > 64) return;
             if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
             if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.beginControlInput(context.player(), payload.controlId());
+        }));
+        ServerPlayNetworking.registerGlobalReceiver(ControlStepPayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if ((payload.direction() != -1.0F && payload.direction() != 1.0F) || payload.controlId().length() > 64) return;
+            if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
+            if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.stepControl(context.player(), payload.controlId(), payload.direction());
         }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             server.execute(() -> server.getAllLevels().forEach(level -> {
                 if (TardisDimensionManager.id(level.dimension()) != null) RuntimeDimensionSync.sendCreate(server, handler.getPlayer(), level.dimension());
+            }));
+            server.execute(() -> TardisManager.ids(server).forEach(id -> {
+                var data = TardisManager.get(server, id);
+                if (data != null) com.intothevortex.network.TardisFlightSync.sendIfChanged(server, data);
             }));
             java.util.UUID tardisId = RuntimeDimensionRestoration.consume(handler.getPlayer().getUUID());
             if (tardisId == null) return;
@@ -69,6 +86,7 @@ public final class IntoTheVortex implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             TardisDimensionManager.tick(server);
             InteriorDoorBlock.tickExits(server);
+            TardisFuelManager.tick(server);
             TardisTravelManager.tick(server);
         });
     }

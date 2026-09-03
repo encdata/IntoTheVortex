@@ -30,7 +30,7 @@ public final class ConsoleBlockEntityRenderer implements BlockEntityRenderer<Con
         state.console = blockEntity.console();
         state.powered = blockEntity.powered();
         state.facing = blockEntity.getBlockState().getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
-        state.renderedThrottle = net.minecraft.util.Mth.lerp(0.5F, state.renderedThrottle, blockEntity.controlValue("throttle"));
+        state.renderedThrottle = net.minecraft.util.Mth.lerp(0.5F, state.renderedThrottle, blockEntity.controlValue("throttle") / 4.0F);
         state.renderedHandbrake = net.minecraft.util.Mth.lerp(0.5F, state.renderedHandbrake, blockEntity.controlValue("handbrake"));
         state.modelState.consoleThrottle = state.renderedThrottle;
         state.modelState.consoleHandbrake = state.renderedHandbrake;

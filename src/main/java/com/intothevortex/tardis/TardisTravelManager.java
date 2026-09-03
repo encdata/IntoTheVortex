@@ -35,16 +35,17 @@ public final class TardisTravelManager {
 
     public static boolean startTravel(MinecraftServer server, UUID id, TardisTravelDestination requestedDestination) {
         TardisData data = TardisManager.get(server, id);
-        if (data == null || data.travelState() != TardisTravelState.LANDED) return false;
+        PreflightResult preflight = TardisPreflightValidator.validate(server, id, requestedDestination);
+        if (!preflight.success()) return false;
         ServerLevel destinationLevel = server.getLevel(TardisDimensionManager.parseDimension(requestedDestination.dimension()));
-        if (destinationLevel == null) return false;
         BlockPos landing = findSafeLanding(destinationLevel, requestedDestination.position(), requestedDestination.yaw());
         if (landing == null) return false;
         TardisTravelDestination source = new TardisTravelDestination(data.dimension(), data.position(), data.yaw());
         TardisTravelDestination destination = new TardisTravelDestination(requestedDestination.dimension(), landing, requestedDestination.yaw());
-        TardisPhaseAnimation animation = TardisAnimationManager.getPhase(Identifier.parse(data.dematAnimation()));
-        int duration = flightDuration(source, destination);
-        TardisData updated = data.withDoorOpen(false).withTravel(TardisTravelState.DEMAT, 0, 0, duration, source, destination);
+        TardisFlightParameters parameters = TardisFlightParameters.calculate(source, destination, data.getThrottleStage());
+        TardisData charged = TardisFuelManager.consumeFuel(data, parameters.fuelCost());
+        if (charged == null) return false;
+        TardisData updated = charged.withDoorOpen(false).withTravel(TardisTravelState.DEMAT, 0, 0, parameters.flightTicks(), source, destination).withTravelFuel(parameters.fuelCost(), true);
         TardisManager.save(server, updated);
         playTransitionSound(server, updated, ModSounds.TARDIS_DEMAT);
         return true;
@@ -87,6 +88,10 @@ public final class TardisTravelManager {
     }
 
     private static void tick(MinecraftServer server, TardisData data) {
+        if (!validActiveTravel(data)) {
+            recoverInvalidTravel(server, data);
+            return;
+        }
         String animationId = data.travelState() == TardisTravelState.MAT ? data.matAnimation() : data.dematAnimation();
         TardisPhaseAnimation animation = TardisAnimationManager.getPhase(Identifier.parse(animationId));
         switch (data.travelState()) {
@@ -147,9 +152,15 @@ public final class TardisTravelManager {
         }
     }
 
-    private static int flightDuration(TardisTravelDestination source, TardisTravelDestination destination) {
-        double distance = Math.sqrt(source.position().distSqr(destination.position()));
-        return Math.max(1, (int) (100 + distance / 10.0D + (source.yaw() == destination.yaw() ? 0 : 100) + (source.dimension().equals(destination.dimension()) ? 0 : 600)));
+    private static boolean validActiveTravel(TardisData data) {
+        if (data.travelState() == TardisTravelState.LANDED) return true;
+        if (data.travelSourceDimension() == null || data.travelDestinationDimension() == null || data.travelSourcePosition() == null || data.travelDestinationPosition() == null) return false;
+        return data.targetFlightTicks() > 0 && data.phaseTicks() >= 0 && data.flightTicks() >= 0 && Double.isFinite(data.travelFuelCost()) && data.travelFuelCost() >= 0.0D && data.fuelCommitted();
+    }
+
+    private static void recoverInvalidTravel(MinecraftServer server, TardisData data) {
+        java.util.logging.Logger.getLogger("IntoTheVortex/TardisTravel").warning("Recovering invalid persisted travel state for TARDIS " + data.id());
+        TardisManager.save(server, data.withLanded(new TardisTravelDestination(data.dimension(), data.position(), data.yaw())).withTravelFuel(0.0D, false));
     }
 
     private static TardisTravelDestination source(TardisData data) {

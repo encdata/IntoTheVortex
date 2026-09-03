@@ -12,6 +12,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.intothevortex.network.TardisFlightPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -33,5 +34,6 @@ public final class IntoTheVortexClient implements ClientModInitializer {
                 else ClientRegistryAccess.unregister(context.client().getConnection(), payload.id());
             }
         }));
+        ClientPlayNetworking.registerGlobalReceiver(TardisFlightPayload.TYPE, (payload, context) -> context.client().execute(() -> ClientTardisFlightState.accept(payload)));
     }
 }
