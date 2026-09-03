@@ -8,4 +8,6 @@ public final class ConsoleRenderState extends BlockEntityRenderState {
     public Direction facing = Direction.NORTH;
     public String console = "intothevortex:toyota";
     public boolean powered;
+    public float renderedThrottle;
+    public float renderedHandbrake;
 }

@@ -11,7 +11,8 @@
   "client": [
     "client.SkyRendererMixin",
     "client.MouseHandlerMixin",
-    "client.KeyboardHandlerMixin"
+    "client.KeyboardHandlerMixin",
+    "client.ControlHitboxEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

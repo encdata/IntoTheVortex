@@ -3,6 +3,7 @@ package com.intothevortex;
 import com.intothevortex.command.IntoTheVortexCommands;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import com.intothevortex.network.ControlValuePayload;
+import com.intothevortex.network.ControlActivatePayload;
 import com.intothevortex.network.RuntimeDimensionSync;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -41,12 +42,17 @@ public final class IntoTheVortex implements ModInitializer {
         ModBlocks.initialize();
 
         ModItems.initialize();
-        ModBlocks.initialize();
 
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ControlValuePayload.TYPE, ControlValuePayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ControlActivatePayload.TYPE, ControlActivatePayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ControlValuePayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
             if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.setControlValue(context.player(), payload.controlId(), payload.value(), payload.released());
+        }));
+        ServerPlayNetworking.registerGlobalReceiver(ControlActivatePayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
+            if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.beginControlInput(context.player(), payload.controlId());
         }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             server.execute(() -> server.getAllLevels().forEach(level -> {

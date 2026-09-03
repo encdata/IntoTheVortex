@@ -14,6 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public final class KeyboardHandlerMixin {
     @Inject(method = "keyPress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;screen:Lnet/minecraft/client/gui/screens/Screen;", ordinal = 0, opcode = 180), cancellable = true)
     private void intothevortex$controlCameraKey(long window, int action, KeyEvent event, CallbackInfo info) {
-        if (Minecraft.getInstance().player != null && ControlInputManager.beforeKeyInput(event.key(), action)) info.cancel();
+        if (Minecraft.getInstance().player != null && ControlInputManager.beforeKeyInput(event.key(), event.scancode(), action, event.modifiers())) info.cancel();
     }
 }

@@ -12,6 +12,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -21,6 +22,7 @@ public final class IntoTheVortexClient implements ClientModInitializer {
     public void onInitializeClient() {
         TardisModelRegistry.initialize();
         ControlInputManager.initialize();
+        ClientTickEvents.END_CLIENT_TICK.register(client -> ControlInputManager.tick());
         EntityRenderers.register(ModEntityTypes.TARDIS_EXTERIOR, TardisExteriorRenderer::new);
         EntityRenderers.register(ModEntityTypes.CONTROL_HITBOX, ControlHitboxRenderer::new);
         BlockEntityRendererRegistry.register(InteriorRegistry.DOOR_ENTITY, context -> new InteriorDoorRenderer());

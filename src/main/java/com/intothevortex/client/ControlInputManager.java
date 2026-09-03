@@ -5,9 +5,11 @@ import com.intothevortex.interior.ConsoleControlDefinition;
 import com.intothevortex.interior.ConsoleInputType;
 import com.intothevortex.network.ControlValuePayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.phys.EntityHitResult;
 import org.lwjgl.glfw.GLFW;
 
 public final class ControlInputManager {
@@ -15,46 +17,60 @@ public final class ControlInputManager {
     private static ConsoleControlDefinition definition;
     private static float value;
     private static boolean allowCamera;
+    private static int activeButton = -1;
+    private static boolean consumesCamera;
+    private static final KeyMapping MOVE_CAMERA = new KeyMapping("key.intothevortex.hold_move_camera", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("intothevortex", "controls")));
 
     private ControlInputManager() {}
 
     public static void initialize() {
+        KeyMappingHelper.registerKeyMapping(MOVE_CAMERA);
+    }
+
+    public static void tick() {
+        if (active == null) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.player instanceof LocalPlayer player) || minecraft.screen != null || active.isRemoved() || active.level() != player.level() || player.distanceToSqr(active.consolePos().getCenter()) > 36.0D) stop();
     }
 
     public static boolean beforeMouseInput(int button, int action) {
-        if (!(Minecraft.getInstance().player instanceof LocalPlayer) || Minecraft.getInstance().screen != null) return false;
-        if (action == GLFW.GLFW_RELEASE) {
-            if (active != null && (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT || button == GLFW.GLFW_MOUSE_BUTTON_LEFT)) release();
-            return active != null;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.player instanceof LocalPlayer) || minecraft.screen != null) return false;
+        if (active != null) {
+            if (action == GLFW.GLFW_RELEASE && button == activeButton) stop();
+            return true;
         }
-        if (action != GLFW.GLFW_PRESS || active != null || !(Minecraft.getInstance().hitResult instanceof EntityHitResult hit) || !(hit.getEntity() instanceof ControlHitboxEntity control)) return active != null;
-        ConsoleControlDefinition next = control.definition();
-        if (next == null || (next.inputType() != ConsoleInputType.LEVER && next.inputType() != ConsoleInputType.KNOB && next.inputType() != ConsoleInputType.JOYSTICK && next.inputType() != ConsoleInputType.MOMENTARY_BUTTON && next.inputType() != ConsoleInputType.KEY_SWITCH)) return false;
-        begin(control);
-        return true;
+        return false;
     }
 
     public static boolean onMouseMove(double dx, double dy) {
-        if (active == null || definition == null) return false;
+        if (active == null || definition == null || !consumesCamera) return false;
         if (allowCamera) return false;
         float old = value;
         if (definition.inputType() == ConsoleInputType.LEVER) value = clamp(value - (float) dy / 160.0F, definition);
         if (definition.inputType() == ConsoleInputType.KNOB || definition.inputType() == ConsoleInputType.KEY_SWITCH) value = clamp(value + (float) dx / 160.0F, definition);
-        if (definition.inputType() == ConsoleInputType.JOYSTICK) value = clamp(value + (float) dx / 160.0F, definition);
+        if (definition.inputType() == ConsoleInputType.JOYSTICK) value = clamp(value + (float) dx / 180.0F, definition);
         if (old != value) send(active, value, false);
         return true;
     }
 
-    public static boolean beforeKeyInput(int key, int action) {
-        if (active == null || key != GLFW.GLFW_KEY_R) return false;
+    public static boolean beforeKeyInput(int key, int scanCode, int action, int modifiers) {
+        if (active == null || action == GLFW.GLFW_REPEAT) return false;
+        if (!MOVE_CAMERA.matches(new net.minecraft.client.input.KeyEvent(key, scanCode, modifiers))) return false;
         allowCamera = action != GLFW.GLFW_RELEASE;
         return true;
     }
 
-    private static void begin(ControlHitboxEntity control) {
+    public static void startFromEntity(ControlHitboxEntity control) {
+        if (active != null || control.isRemoved()) return;
+        ConsoleControlDefinition next = control.definition();
+        if (next == null) return;
         active = control;
-        definition = control.definition();
+        definition = next;
         value = control.value();
+        activeButton = GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+        consumesCamera = isDragControl(definition);
+        if (definition.inputType() == ConsoleInputType.MOMENTARY_BUTTON) send(active, 1.0F, false);
     }
 
     private static void release() {
@@ -63,6 +79,17 @@ public final class ControlInputManager {
         active = null;
         definition = null;
         allowCamera = false;
+        activeButton = -1;
+        consumesCamera = false;
+    }
+
+    private static void stop() {
+        release();
+    }
+
+    private static boolean isDragControl(ConsoleControlDefinition control) {
+        ConsoleInputType type = control.inputType();
+        return type == ConsoleInputType.LEVER || type == ConsoleInputType.KNOB || type == ConsoleInputType.JOYSTICK || type == ConsoleInputType.MOMENTARY_BUTTON || type == ConsoleInputType.KEY_SWITCH;
     }
 
     private static void send(ControlHitboxEntity control, float value, boolean released) {

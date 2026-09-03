@@ -101,6 +101,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
                 controlValues.put(id, refueling ? 1.0F : 0.0F);
                 TardisManager.save(server.getServer(), data.withRefueling(refueling));
                 setChanged();
+                server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
                 if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Refueling: " + (refueling ? "On" : "Off")), true);
             }
             return;
@@ -109,6 +110,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         float value = definition.inputType() == ConsoleInputType.SWITCH || definition.inputType() == ConsoleInputType.KEY_SWITCH ? (oldValue >= 0.5F ? 0.0F : 1.0F) : oldValue;
         controlValues.put(id, value);
         setChanged();
+        server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal(id + ": " + String.format(java.util.Locale.ROOT, "%.2f", value)), true);
     }
 
