@@ -121,7 +121,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         server.getEntitiesOfClass(ControlHitboxEntity.class, new net.minecraft.world.phys.AABB(worldPosition).inflate(4.0D), entity -> entity.consolePos().equals(worldPosition) || owner.equals(entity.consoleUuid())).forEach(entity -> entity.discard());
         for (ConsoleControlDefinition control : definition.controls()) {
             org.joml.Vector3f offset = rotatedOffset(control.position(), getBlockState().getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING));
-            server.addFreshEntity(new ControlHitboxEntity(server, worldPosition, control.withPosition(offset), owner));
+            server.addFreshEntity(new ControlHitboxEntity(server, worldPosition, control.withPosition(offset), owner, console));
         }
         hitboxesCreated = true;
         LOGGER.info("Spawned {} controls for {} console at {} in {}", definition.controls().size(), console, worldPosition, server.dimension().identifier());

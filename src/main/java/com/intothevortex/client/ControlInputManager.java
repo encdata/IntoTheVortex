@@ -4,6 +4,7 @@ import com.intothevortex.entity.ControlHitboxEntity;
 import com.intothevortex.interior.ConsoleControlDefinition;
 import com.intothevortex.interior.ConsoleInputType;
 import com.intothevortex.network.ControlValuePayload;
+import com.intothevortex.network.ControlActivatePayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -13,12 +14,14 @@ import net.minecraft.client.player.LocalPlayer;
 import org.lwjgl.glfw.GLFW;
 
 public final class ControlInputManager {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("IntoTheVortex/ControlInput");
     private static ControlHitboxEntity active;
     private static ConsoleControlDefinition definition;
     private static float value;
     private static boolean allowCamera;
     private static int activeButton = -1;
     private static boolean consumesCamera;
+    private static boolean movementLogged;
     private static final KeyMapping MOVE_CAMERA = new KeyMapping("key.intothevortex.hold_move_camera", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("intothevortex", "controls")));
 
     private ControlInputManager() {}
@@ -28,8 +31,12 @@ public final class ControlInputManager {
     }
 
     public static void tick() {
-        if (active == null) return;
         Minecraft minecraft = Minecraft.getInstance();
+        if (active == null && minecraft.player instanceof LocalPlayer && minecraft.screen == null && minecraft.mouseHandler.isRightPressed() && minecraft.crosshairPickEntity instanceof ControlHitboxEntity control) {
+            startFromEntity(control);
+            if (active != null && isClickControl(definition)) ClientPlayNetworking.send(new ControlActivatePayload(control.consolePos(), control.controlId()));
+        }
+        if (active == null) return;
         if (!(minecraft.player instanceof LocalPlayer player) || minecraft.screen != null || active.isRemoved() || active.level() != player.level() || player.distanceToSqr(active.consolePos().getCenter()) > 36.0D) stop();
     }
 
@@ -39,6 +46,11 @@ public final class ControlInputManager {
         if (active != null) {
             if (action == GLFW.GLFW_RELEASE && button == activeButton) stop();
             return true;
+        }
+        if (action == GLFW.GLFW_PRESS && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && minecraft.crosshairPickEntity instanceof ControlHitboxEntity control) {
+            startFromEntity(control);
+            if (active != null && isClickControl(definition)) ClientPlayNetworking.send(new ControlActivatePayload(control.consolePos(), control.controlId()));
+            return active != null;
         }
         return false;
     }
@@ -51,6 +63,10 @@ public final class ControlInputManager {
         if (definition.inputType() == ConsoleInputType.KNOB || definition.inputType() == ConsoleInputType.KEY_SWITCH) value = clamp(value + (float) dx / 160.0F, definition);
         if (definition.inputType() == ConsoleInputType.JOYSTICK) value = clamp(value + (float) dx / 180.0F, definition);
         if (old != value) send(active, value, false);
+        if (!movementLogged && (dx != 0.0D || dy != 0.0D)) {
+            movementLogged = true;
+            LOGGER.info("Control drag movement received: id={}, dx={}, dy={}, value={}", active.controlId(), dx, dy, value);
+        }
         return true;
     }
 
@@ -64,12 +80,17 @@ public final class ControlInputManager {
     public static void startFromEntity(ControlHitboxEntity control) {
         if (active != null || control.isRemoved()) return;
         ConsoleControlDefinition next = control.definition();
-        if (next == null) return;
+        if (next == null) {
+            LOGGER.warn("Control hold rejected because definition is unavailable: id={}, pos={}, dimension={}", control.controlId(), control.consolePos(), control.level().dimension().identifier());
+            return;
+        }
         active = control;
         definition = next;
         value = control.value();
         activeButton = GLFW.GLFW_MOUSE_BUTTON_RIGHT;
         consumesCamera = isDragControl(definition);
+        movementLogged = false;
+        LOGGER.info("Control hold started: id={}, type={}, pos={}, drag={}, dimension={}", control.controlId(), definition.inputType(), control.consolePos(), consumesCamera, control.level().dimension().identifier());
         if (definition.inputType() == ConsoleInputType.MOMENTARY_BUTTON) send(active, 1.0F, false);
     }
 
@@ -84,12 +105,21 @@ public final class ControlInputManager {
     }
 
     private static void stop() {
+        if (active != null) LOGGER.info("Control hold stopped: id={}, value={}", active.controlId(), value);
         release();
     }
 
     private static boolean isDragControl(ConsoleControlDefinition control) {
         ConsoleInputType type = control.inputType();
         return type == ConsoleInputType.LEVER || type == ConsoleInputType.KNOB || type == ConsoleInputType.JOYSTICK || type == ConsoleInputType.MOMENTARY_BUTTON || type == ConsoleInputType.KEY_SWITCH;
+    }
+
+    private static boolean isClickControl(ConsoleControlDefinition control) {
+        return !isDragControl(control);
+    }
+
+    public static boolean isActive() {
+        return active != null;
     }
 
     private static void send(ControlHitboxEntity control, float value, boolean released) {
