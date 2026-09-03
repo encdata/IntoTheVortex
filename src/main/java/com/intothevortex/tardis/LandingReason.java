@@ -1,0 +1,14 @@
+package com.intothevortex.tardis;
+
+public enum LandingReason {
+    SUCCESS_EXACT,
+    SUCCESS_NEARBY,
+    INVALID_DIMENSION,
+    OUTSIDE_WORLD_BORDER,
+    OUTSIDE_BUILD_HEIGHT,
+    BLOCKED,
+    NO_SOLID_FLOOR,
+    DANGEROUS,
+    SEARCH_LIMIT_REACHED,
+    NO_VALID_LOCATION
+}

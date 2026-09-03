@@ -26,6 +26,7 @@ import com.intothevortex.exterior.TardisAnimationManager;
 import com.intothevortex.tardis.TardisTravelManager;
 import com.intothevortex.tardis.TardisFuelManager;
 import com.intothevortex.tardis.TardisManager;
+import com.intothevortex.tardis.TardisFlightEventManager;
 import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.interior.ConsoleRegistry;
 import com.intothevortex.interior.ControlRegistry;
@@ -41,6 +42,7 @@ public final class IntoTheVortex implements ModInitializer {
         ModEntityTypes.initialize();
         InteriorRegistry.initialize();
         ControlRegistry.initialize();
+        TardisFlightEventManager.initialize();
         ConsoleRegistry.initialize();
         IntoTheVortexCommands.initialize();
         ModBlocks.initialize();

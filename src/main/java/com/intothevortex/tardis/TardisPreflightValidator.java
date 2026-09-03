@@ -12,6 +12,7 @@ public final class TardisPreflightValidator {
         TardisData data = TardisManager.get(server, id);
         if (data == null) return PreflightResult.failure(PreflightReason.MISSING_TARDIS_DATA, "TARDIS data was not found");
         data = data.sanitized();
+        if (data.isCrashed()) return PreflightResult.failure(PreflightReason.CRASHED, "The TARDIS requires recovery");
         if (data.travelState() == TardisTravelState.DEMAT) return PreflightResult.failure(PreflightReason.ALREADY_DEMATERIALIZING, "The TARDIS is dematerializing");
         if (data.travelState() == TardisTravelState.FLIGHT) return PreflightResult.failure(PreflightReason.ALREADY_IN_FLIGHT, "The TARDIS is already in flight");
         if (data.travelState() == TardisTravelState.MAT) return PreflightResult.failure(PreflightReason.ALREADY_MATERIALIZING, "The TARDIS is materializing");

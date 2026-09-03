@@ -4,6 +4,7 @@ import com.intothevortex.dimension.TardisDimensionManager;
 import com.intothevortex.item.ModItems;
 import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
+import com.intothevortex.tardis.TardisTravelState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -51,6 +52,10 @@ public final class ControlBehaviors {
     };
 
     public static final ControlBehavior POWER = new ControlBehavior() {
+        @Override public InteractionResult validate(ControlUseContext context) {
+            return context.tardis() != null && (context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
+        }
+
         @Override public InteractionResult onPress(ControlUseContext context) {
             boolean powered = !context.console().powered();
             context.console().setPowered(context.player(), powered);
@@ -60,13 +65,17 @@ public final class ControlBehaviors {
 
     public static final ControlBehavior REFUELER = new ControlBehavior() {
         @Override public InteractionResult onPress(ControlUseContext context) {
-            if (context.tardis() == null || context.tardis().travelState() != com.intothevortex.tardis.TardisTravelState.LANDED || context.console().controlValue("handbrake") < 0.5F) return InteractionResult.FAILED_INVALID_PHASE;
+            if (context.tardis() == null || context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed() || context.console().controlValue("handbrake") < 0.5F) return InteractionResult.FAILED_INVALID_PHASE;
             context.console().setRefueling(context.player(), !context.console().refueling());
             return InteractionResult.SUCCESS;
         }
     };
 
     public static final ControlBehavior HANDBRAKE = new ControlBehavior() {
+        @Override public InteractionResult validate(ControlUseContext context) {
+            return context.tardis() != null && (context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
+        }
+
         @Override public InteractionResult onPress(ControlUseContext context) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
             context.console().setHandbrakeEngaged(context.player(), !context.tardis().isHandbrakeEngaged());
@@ -81,6 +90,10 @@ public final class ControlBehaviors {
     };
 
     public static final ControlBehavior THROTTLE = new ControlBehavior() {
+        @Override public InteractionResult validate(ControlUseContext context) {
+            return context.tardis() != null && (context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
+        }
+
         @Override public InteractionResult onPress(ControlUseContext context) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
             int delta = context.inputDelta() < 0.0F ? -1 : 1;

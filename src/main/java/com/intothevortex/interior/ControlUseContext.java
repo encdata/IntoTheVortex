@@ -3,6 +3,7 @@ package com.intothevortex.interior;
 import com.intothevortex.dimension.TardisDimensionManager;
 import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
+import com.intothevortex.tardis.FlightCondition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -28,6 +29,14 @@ public record ControlUseContext(ServerPlayer player, ServerLevel level, ConsoleB
 
     public BlockPos position() {
         return console.getBlockPos();
+    }
+
+    public FlightCondition flightCondition() {
+        return tardis == null ? FlightCondition.NORMAL : tardis.flightCondition();
+    }
+
+    public boolean canUseNormalFlightControls() {
+        return tardis != null && tardis.canUseNormalFlightControls();
     }
 
     public InteractionResult validate() {
