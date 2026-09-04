@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.EntityRenderers;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import com.intothevortex.network.TardisFlightPayload;
+import com.intothevortex.network.ControlValueSyncPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -35,5 +36,8 @@ public final class IntoTheVortexClient implements ClientModInitializer {
             }
         }));
         ClientPlayNetworking.registerGlobalReceiver(TardisFlightPayload.TYPE, (payload, context) -> context.client().execute(() -> ClientTardisFlightState.accept(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(ControlValueSyncPayload.TYPE, (payload, context) -> context.client().execute(() -> {
+            if (context.client().level != null && context.client().level.getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.applySyncedControlValue(payload.controlId(), payload.value());
+        }));
     }
 }

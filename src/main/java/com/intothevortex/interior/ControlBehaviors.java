@@ -2,6 +2,7 @@ package com.intothevortex.interior;
 
 import com.intothevortex.dimension.TardisDimensionManager;
 import com.intothevortex.item.ModItems;
+import com.intothevortex.item.TardisLinking;
 import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
 import com.intothevortex.tardis.TardisTravelState;
@@ -20,6 +21,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import java.util.List;
@@ -91,26 +93,36 @@ public final class ControlBehaviors {
 
     public static final ControlBehavior HANDBRAKE = new ControlBehavior() {
         @Override public InteractionResult validate(ControlUseContext context) {
-            return context.tardis() != null && (context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
+            return context.tardis() != null && (context.tardis().travelState() == TardisTravelState.DEMAT || context.tardis().travelState() == TardisTravelState.MAT || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
         }
 
         @Override public InteractionResult onPress(ControlUseContext context) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
-            context.console().setHandbrakeEngaged(context.player(), !context.tardis().isHandbrakeEngaged());
-            ControlSoundManager.playForControl(context.level(), context.position(), "handbrake", !context.tardis().isHandbrakeEngaged());
+            boolean engaged = !context.tardis().isHandbrakeEngaged();
+            context.console().setHandbrakeEngaged(context.player(), engaged);
+            ControlSoundManager.playForControl(context.level(), context.position(), "handbrake", engaged);
+            if (engaged && context.tardis().travelState() == TardisTravelState.FLIGHT) {
+                if (context.tardis().autopilot()) TardisTravelManager.requestMaterialization(context.level().getServer(), context.tardis().id());
+                else TardisTravelManager.crash(context.level().getServer(), context.tardis().id(), new FlightFailure(FlightFailureType.INVALID_TRAVEL_STATE, FlightFailureSeverity.EMERGENCY, true, "handbrake_during_flight"));
+            }
             return InteractionResult.SUCCESS;
         }
 
         @Override public InteractionResult onDrag(ControlUseContext context, float value) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
-            context.console().setHandbrakeEngaged(context.player(), value >= 0.5F);
+            boolean engaged = value >= 0.5F;
+            context.console().setHandbrakeEngaged(context.player(), engaged);
+            if (engaged && context.tardis().travelState() == TardisTravelState.FLIGHT) {
+                if (context.tardis().autopilot()) TardisTravelManager.requestMaterialization(context.level().getServer(), context.tardis().id());
+                else TardisTravelManager.crash(context.level().getServer(), context.tardis().id(), new FlightFailure(FlightFailureType.INVALID_TRAVEL_STATE, FlightFailureSeverity.EMERGENCY, true, "handbrake_during_flight"));
+            }
             return InteractionResult.SUCCESS;
         }
     };
 
     public static final ControlBehavior THROTTLE = new ControlBehavior() {
         @Override public InteractionResult validate(ControlUseContext context) {
-            return context.tardis() != null && (context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
+            return context.tardis() != null && (context.tardis().travelState() == TardisTravelState.DEMAT || context.tardis().travelState() == TardisTravelState.MAT || context.tardis().isCrashed()) ? InteractionResult.FAILED_INVALID_PHASE : InteractionResult.SUCCESS;
         }
 
         @Override public InteractionResult onPress(ControlUseContext context) {
@@ -165,6 +177,111 @@ public final class ControlBehaviors {
             float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
             context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
             send(context.player(), context.definition().id() + ": " + (value >= 0.5F ? "On" : "Off"));
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior SYSTEM_TOGGLE = new ControlBehavior() {
+        @Override public InteractionResult validate(ControlUseContext context) {
+            if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
+            if (!context.tardis().powered()) return InteractionResult.FAILED_NO_POWER;
+            if (context.tardis().travelState() == TardisTravelState.DEMAT || context.tardis().travelState() == TardisTravelState.MAT || context.tardis().isCrashed()) return InteractionResult.FAILED_INVALID_PHASE;
+            return InteractionResult.SUCCESS;
+        }
+
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
+            send(context.player(), context.definition().id() + ": " + (value >= 0.5F ? "On" : "Off"));
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior SECURITY = new ControlBehavior() {
+        @Override public InteractionResult validate(ControlUseContext context) {
+            if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
+            if (!context.tardis().ownerId().equals(context.player().getUUID()) || !context.player().getMainHandItem().is(ModItems.TARDIS_KEY)) return InteractionResult.FAILED_PERMISSION;
+            if (context.tardis().travelState() != TardisTravelState.LANDED || context.tardis().isCrashed()) return InteractionResult.FAILED_INVALID_PHASE;
+            return InteractionResult.SUCCESS;
+        }
+
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
+            send(context.player(), "Security: " + (value >= 0.5F ? "On" : "Off"));
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior SIEGE_MODE = new ControlBehavior() {
+        @Override public InteractionResult validate(ControlUseContext context) {
+            return context.tardis() == null ? InteractionResult.FAILED_INVALID_CONTROL : context.tardis().travelState() == TardisTravelState.LANDED && !context.tardis().isCrashed() ? InteractionResult.SUCCESS : InteractionResult.FAILED_INVALID_PHASE;
+        }
+
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
+            send(context.player(), "Siege mode: " + (value >= 0.5F ? "On" : "Off"));
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior ENGINE_OVERLOAD = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            if (context.tardis() == null || !context.tardis().powered()) return InteractionResult.FAILED_NO_POWER;
+            if (context.currentValue() < 0.5F) {
+                context.console().setAuthoritativeValue(context.player(), context.definition().id(), 1.0F, false);
+                send(context.player(), "Engine overload armed");
+                return InteractionResult.SUCCESS;
+            }
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), 0.0F, false);
+            if (context.tardis().travelState() == TardisTravelState.FLIGHT) {
+                TardisTravelManager.crash(context.level().getServer(), context.tardis().id(), new FlightFailure(FlightFailureType.INVALID_TRAVEL_STATE, FlightFailureSeverity.EMERGENCY, true, "engine_overload"));
+            }
+            send(context.player(), "Engine overload discharged");
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior LAND_TYPE = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
+            send(context.player(), "Landing mode: " + (value >= 0.5F ? "Precise" : "Safe"));
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior MONITOR_NAVIGATION = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
+            send(context.player(), context.definition().id() + ": " + (value >= 0.5F ? "Next" : "Previous"));
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior SONIC_PORT = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            if (context.tardis() == null || !context.tardis().powered()) return InteractionResult.FAILED_NO_POWER;
+            context.level().sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK, context.position().getX() + 0.5D, context.position().getY() + 1.0D, context.position().getZ() + 0.5D, 8, 0.35D, 0.35D, 0.35D, 0.02D);
+            send(context.player(), "Sonic port active");
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior CONSOLE_PORT = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
+            send(context.player(), "Console port: " + context.console().console());
+            return InteractionResult.SUCCESS;
+        }
+    };
+
+    public static final ControlBehavior UTILITY = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            context.console().setAuthoritativeValue(context.player(), context.definition().id(), context.currentValue() >= 0.5F ? 0.0F : 1.0F, false);
+            send(context.player(), context.definition().id() + " activated");
             return InteractionResult.SUCCESS;
         }
     };
@@ -261,6 +378,19 @@ public final class ControlBehaviors {
         }
     };
 
+    public static final ControlBehavior TELEPATHIC = new ControlBehavior() {
+        @Override public InteractionResult onPress(ControlUseContext context) {
+            if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
+            ItemStack held = context.player().getMainHandItem();
+            if (held.is(ModItems.TARDIS_KEY)) {
+                TardisLinking.link(held, context.tardis().id());
+                send(context.player(), "TARDIS key linked to " + context.tardis().id());
+                return InteractionResult.SUCCESS;
+            }
+            return VISUALISER.onPress(context);
+        }
+    };
+
     public static final ControlBehavior SAVE_WAYPOINT = new ControlBehavior() {
         @Override public InteractionResult onPress(ControlUseContext context) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
@@ -293,6 +423,7 @@ public final class ControlBehaviors {
         if (context.definition().id().equals("z")) z = Math.clamp(z + change, -29999999L, 29999999L);
         TardisData updated = context.tardis().withRequestedDestination(new TardisTravelDestination(context.tardis().requestedDestinationDimension(), new BlockPos((int) x, (int) y, (int) z), context.tardis().requestedDestinationYaw()));
         TardisManager.save(context.level().getServer(), updated);
+        context.console().syncCoordinateValues(updated.requestedDestinationPosition());
         send(context.player(), context.definition().id().toUpperCase(java.util.Locale.ROOT) + ": " + new BlockPos((int) x, (int) y, (int) z));
         return InteractionResult.SUCCESS;
     }
@@ -305,7 +436,9 @@ public final class ControlBehaviors {
         if (context.definition().id().equals("x")) x = coordinate;
         if (context.definition().id().equals("y")) y = coordinate;
         if (context.definition().id().equals("z")) z = coordinate;
-        TardisManager.save(context.level().getServer(), context.tardis().withRequestedDestination(new TardisTravelDestination(context.tardis().requestedDestinationDimension(), new BlockPos(x, y, z), context.tardis().requestedDestinationYaw())));
+        TardisData updated = context.tardis().withRequestedDestination(new TardisTravelDestination(context.tardis().requestedDestinationDimension(), new BlockPos(x, y, z), context.tardis().requestedDestinationYaw()));
+        TardisManager.save(context.level().getServer(), updated);
+        context.console().syncCoordinateValues(updated.requestedDestinationPosition());
         send(context.player(), context.definition().id().toUpperCase(java.util.Locale.ROOT) + ": " + coordinate);
         return InteractionResult.SUCCESS;
     }

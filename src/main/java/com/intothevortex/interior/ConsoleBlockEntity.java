@@ -24,6 +24,8 @@ import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
 import com.intothevortex.dimension.TardisDimensionManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.intothevortex.network.ControlValueSyncPayload;
 
 public final class ConsoleBlockEntity extends BlockEntity {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("IntoTheVortex/Console");
@@ -46,6 +48,22 @@ public final class ConsoleBlockEntity extends BlockEntity {
         return consoleUuid;
     }
     public float controlValue(String id) { return controlValues.getOrDefault(id, 0.0F); }
+    public void applySyncedControlValue(String id, float value) {
+        if (level == null || !level.isClientSide() || !Float.isFinite(value)) return;
+        ConsoleControlDefinition definition = definition(id);
+        if (definition != null) controlValues.put(id, Math.clamp(value, definition.minimum(), definition.maximum()));
+    }
+    public void syncCoordinateValues(BlockPos position) {
+        controlValues.put("x", (float) position.getX());
+        controlValues.put("y", (float) position.getY());
+        controlValues.put("z", (float) position.getZ());
+        setChanged();
+        if (level instanceof ServerLevel server) {
+            sendControlValue(server, "x", controlValues.get("x"));
+            sendControlValue(server, "y", controlValues.get("y"));
+            sendControlValue(server, "z", controlValues.get("z"));
+        }
+    }
     public boolean powered() { return powered; }
     public boolean refueling() { return refueling; }
     public void saveWaypoint(TardisData data) { waypointDimension = data.dimension(); waypointPosition = data.position(); waypointYaw = data.yaw(); setChanged(); }
@@ -65,6 +83,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         controlValues.put(id, bounded);
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        sendControlValue(server, id, bounded);
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal(id + ": " + String.format(java.util.Locale.ROOT, "%.2f", bounded)), true);
     }
 
@@ -75,7 +94,16 @@ public final class ConsoleBlockEntity extends BlockEntity {
         if (context == null || context.validate() != InteractionResult.SUCCESS) return;
         ControlCapability capability = released ? ControlCapability.RELEASE : context.definition().inputType() == ConsoleInputType.MOMENTARY_BUTTON ? ControlCapability.PRESS_DOWN : ControlCapability.DRAG;
         if (!context.registered().capabilities().contains(capability)) return;
-        InteractionResult result = context.registered().behavior().onDrag(context, value);
+        InteractionResult result;
+        if (released) {
+            result = context.registered().behavior().onRelease(context);
+            if (result == InteractionResult.FAILED_INVALID_CONTROL_STATE) result = context.registered().behavior().onDrag(context, value);
+        } else if (context.definition().inputType() == ConsoleInputType.MOMENTARY_BUTTON && context.registered().capabilities().contains(ControlCapability.PRESS_DOWN)) {
+            result = context.registered().behavior().onPressDown(context);
+            if (result == InteractionResult.FAILED_INVALID_CONTROL_STATE) result = context.registered().behavior().onDrag(context, value);
+        } else {
+            result = context.registered().behavior().onDrag(context, value);
+        }
         if (result == InteractionResult.SUCCESS) setAuthoritativeValue(player, id, value, released);
     }
 
@@ -112,6 +140,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         }
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        sendControlValue(server, "power", value ? 1.0F : 0.0F);
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Power: " + (value ? "On" : "Off")), true);
     }
 
@@ -124,6 +153,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         if (data != null) TardisManager.save(server.getServer(), data.withRefueling(value));
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        sendControlValue(server, "refueler", value ? 1.0F : 0.0F);
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Refueling: " + (value ? "On" : "Off")), true);
     }
 
@@ -132,9 +162,14 @@ public final class ConsoleBlockEntity extends BlockEntity {
         controlValues.put("handbrake", value ? 1.0F : 0.0F);
         java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
         TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
-        if (data != null) TardisManager.save(server.getServer(), data.withFlightControls(data.getThrottleStage(), value));
+        if (data != null) {
+            TardisData updated = data.withFlightControls(data.getThrottleStage(), value);
+            TardisManager.save(server.getServer(), updated);
+            if (!value && updated.getThrottleStage() > 0) com.intothevortex.tardis.TardisTravelManager.tryFly(server.getServer(), updated.id());
+        }
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        sendControlValue(server, "handbrake", value ? 1.0F : 0.0F);
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Handbrake: " + (value ? "Engaged" : "Released")), true);
     }
 
@@ -144,9 +179,14 @@ public final class ConsoleBlockEntity extends BlockEntity {
         controlValues.put("throttle", (float) stage);
         java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
         TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
-        if (data != null) TardisManager.save(server.getServer(), data.withFlightControls(stage, data.isHandbrakeEngaged()));
+        if (data != null) {
+            TardisData updated = data.withFlightControls(stage, data.isHandbrakeEngaged());
+            TardisManager.save(server.getServer(), updated);
+            if (stage > 0 && !updated.isHandbrakeEngaged()) com.intothevortex.tardis.TardisTravelManager.tryFly(server.getServer(), updated.id());
+        }
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        sendControlValue(server, "throttle", stage);
         if (player instanceof ServerPlayer serverPlayer) serverPlayer.sendSystemMessage(Component.literal("Throttle: " + stage), true);
     }
 
@@ -161,6 +201,10 @@ public final class ConsoleBlockEntity extends BlockEntity {
         }
         hitboxesCreated = true;
         LOGGER.info("Spawned {} controls for {} console at {} in {}", definition.controls().size(), console, worldPosition, server.dimension().identifier());
+    }
+
+    private void sendControlValue(ServerLevel server, String id, float value) {
+        server.getEntitiesOfClass(ServerPlayer.class, new net.minecraft.world.phys.AABB(worldPosition).inflate(32.0D)).forEach(player -> ServerPlayNetworking.send(player, new ControlValueSyncPayload(worldPosition, id, value)));
     }
 
     private static org.joml.Vector3f rotatedOffset(org.joml.Vector3f offset, net.minecraft.core.Direction facing) {

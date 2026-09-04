@@ -38,7 +38,7 @@ public final class ControlHitboxEntity extends Entity {
     private float controlHeight = 0.125F;
     private float value;
 
-    public ControlHitboxEntity(EntityType<? extends ControlHitboxEntity> type, Level level) { super(type, level); setNoGravity(true); }
+    public ControlHitboxEntity(EntityType<? extends ControlHitboxEntity> type, Level level) { super(type, level); setNoGravity(true); noPhysics = true; }
 
     public ControlHitboxEntity(ServerLevel level, BlockPos consolePos, ConsoleControlDefinition definition, UUID consoleEntityId, String consoleDefinition) {
         this(ModEntityTypes.CONTROL_HITBOX, level);

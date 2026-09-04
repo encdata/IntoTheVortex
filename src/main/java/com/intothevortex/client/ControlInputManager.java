@@ -8,6 +8,7 @@ import com.intothevortex.interior.ControlRegistry;
 import com.intothevortex.network.ControlValuePayload;
 import com.intothevortex.network.ControlActivatePayload;
 import com.intothevortex.network.ControlStepPayload;
+import com.intothevortex.network.ControlValueRequestPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -116,6 +117,7 @@ public final class ControlInputManager {
         consumesCamera = isDragControl(definition);
         movementLogged = false;
         dragMoved = false;
+        ClientPlayNetworking.send(new ControlValueRequestPayload(control.consolePos(), control.controlId()));
         LOGGER.info("Control hold started: id={}, type={}, pos={}, drag={}, dimension={}", control.controlId(), definition.inputType(), control.consolePos(), consumesCamera, control.level().dimension().identifier());
         if (definition.inputType() == ConsoleInputType.MOMENTARY_BUTTON) send(active, 1.0F, false);
     }

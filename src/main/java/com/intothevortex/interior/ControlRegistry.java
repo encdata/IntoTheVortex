@@ -16,40 +16,49 @@ public final class ControlRegistry {
     private ControlRegistry() {}
 
     public static void initialize() {
-        register("anti_gravs", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
+        register("anti_gravs", ControlBehaviors.SYSTEM_TOGGLE, ConsoleInputType.SWITCH);
         register("auto_pilot", ControlBehaviors.AUTOPILOT, defaultModes(ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.SWITCH), ConsoleInputType.SWITCH);
-        register("cloak", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
+        register("cloak", ControlBehaviors.SYSTEM_TOGGLE, ConsoleInputType.SWITCH);
         register("dimension", ControlBehaviors.DIMENSION, ConsoleInputType.KNOB);
         register("direction", ControlBehaviors.DIRECTION, ConsoleInputType.KNOB);
         register("door", ControlBehaviors.DOOR, defaultModes(ConsoleInputType.BUTTON, ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.BUTTON, ConsoleInputType.SWITCH), ConsoleInputType.BUTTON, ConsoleInputType.SWITCH);
         register("door_lock", ControlBehaviors.DOOR_LOCK, defaultModes(ConsoleInputType.KEY_SWITCH, ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.KEY_SWITCH, ConsoleInputType.BUTTON), ConsoleInputType.KEY_SWITCH, ConsoleInputType.BUTTON);
         register("fast_return", ControlBehaviors.FAST_RETURN, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
-        register("hads", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
+        register("hads", ControlBehaviors.SYSTEM_TOGGLE, ConsoleInputType.SWITCH);
         register("hail_mary", ControlBehaviors.HAIL_MARY, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("handbrake", ControlBehaviors.HANDBRAKE, defaultModes(ConsoleInputType.LEVER, ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.LEVER, ConsoleInputType.SWITCH), ConsoleInputType.LEVER, ConsoleInputType.SWITCH);
-        register("land_type", ConsoleInputType.SWITCH, ConsoleInputType.BUTTON);
+        register("land_type", ControlBehaviors.LAND_TYPE, defaultModes(ConsoleInputType.SWITCH, ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.SWITCH, ConsoleInputType.BUTTON), ConsoleInputType.SWITCH, ConsoleInputType.BUTTON);
         register("monitor", ControlBehaviors.MONITOR, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
-        register("monitor_upper", ConsoleInputType.BUTTON);
-        register("monitor_left", ConsoleInputType.BUTTON);
+        register("monitor_upper", ControlBehaviors.MONITOR_NAVIGATION, ConsoleInputType.BUTTON);
+        register("monitor_left", ControlBehaviors.MONITOR_NAVIGATION, ConsoleInputType.BUTTON);
         register("power", ControlBehaviors.POWER, defaultModes(ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.SWITCH), ConsoleInputType.SWITCH);
-        register("randomiser", ConsoleInputType.KNOB);
+        register("randomiser", ControlBehaviors.RANDOMISER, ConsoleInputType.KNOB);
         register("refueler", ControlBehaviors.REFUELER, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
-        register("security", ConsoleInputType.SWITCH);
-        register("siege_mode", ConsoleInputType.SWITCH);
-        register("sonic_port", ConsoleInputType.BUTTON);
-        register("telepathic", ConsoleInputType.BUTTON);
+        register("security", ControlBehaviors.SECURITY, ConsoleInputType.SWITCH);
+        register("siege_mode", ControlBehaviors.SIEGE_MODE, ConsoleInputType.SWITCH);
+        register("sonic_port", ControlBehaviors.SONIC_PORT, ConsoleInputType.BUTTON);
+        register("telepathic", ControlBehaviors.TELEPATHIC, ConsoleInputType.BUTTON);
         register("throttle", ControlBehaviors.THROTTLE, defaultModes(ConsoleInputType.LEVER), defaultCapabilities(ConsoleInputType.LEVER), ConsoleInputType.LEVER);
-        register("visualiser", ConsoleInputType.BUTTON);
-        register("engine_overload", ControlBehaviors.TOGGLE, ConsoleInputType.BUTTON);
+        register("visualiser", ControlBehaviors.VISUALISER, ConsoleInputType.BUTTON);
+        register("engine_overload", ControlBehaviors.ENGINE_OVERLOAD, ConsoleInputType.BUTTON);
         register("electrical_discharge", ControlBehaviors.ELECTRICAL_DISCHARGE, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
-        register("shields", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
-        register("console_port", ConsoleInputType.BUTTON);
+        register("shields", ControlBehaviors.SYSTEM_TOGGLE, ConsoleInputType.SWITCH);
+        register("console_port", ControlBehaviors.CONSOLE_PORT, ConsoleInputType.BUTTON);
         register("save_waypoint", ControlBehaviors.SAVE_WAYPOINT, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("load_waypoint", ControlBehaviors.LOAD_WAYPOINT, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("increment", ControlBehaviors.INCREMENT, ConsoleInputType.KNOB);
         register("x", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB, ConsoleInputType.VALVE);
         register("y", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB, ConsoleInputType.VALVE);
         register("z", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB, ConsoleInputType.VALVE);
+        register("antigravs", ControlBehaviors.SYSTEM_TOGGLE, ConsoleInputType.SWITCH);
+        register("protocol_3", ControlBehaviors.SYSTEM_TOGGLE, ConsoleInputType.SWITCH);
+        register("protocol_19", ControlBehaviors.SECURITY, ConsoleInputType.SWITCH);
+        register("protocol_1913", ControlBehaviors.SIEGE_MODE, ConsoleInputType.SWITCH);
+        register("protocol_116", ControlBehaviors.AUTOPILOT, ConsoleInputType.SWITCH);
+        register("telepathic_circuit", ControlBehaviors.TELEPATHIC, ConsoleInputType.BUTTON);
+        register("food_creation", ControlBehaviors.UTILITY, ConsoleInputType.BUTTON);
+        register("hammer_hanger", ControlBehaviors.UTILITY, ConsoleInputType.BUTTON);
+        register("refreshment", ControlBehaviors.UTILITY, ConsoleInputType.BUTTON);
     }
 
     public static RegisteredControl register(String path, ConsoleInputType... types) {

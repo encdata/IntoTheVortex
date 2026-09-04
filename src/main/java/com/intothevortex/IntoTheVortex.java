@@ -5,6 +5,8 @@ import com.intothevortex.network.RuntimeDimensionPayload;
 import com.intothevortex.network.ControlValuePayload;
 import com.intothevortex.network.ControlActivatePayload;
 import com.intothevortex.network.ControlStepPayload;
+import com.intothevortex.network.ControlValueRequestPayload;
+import com.intothevortex.network.ControlValueSyncPayload;
 import com.intothevortex.network.TardisFlightPayload;
 import com.intothevortex.network.RuntimeDimensionSync;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -55,6 +57,8 @@ public final class IntoTheVortex implements ModInitializer {
         PayloadTypeRegistry.serverboundPlay().register(ControlValuePayload.TYPE, ControlValuePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ControlActivatePayload.TYPE, ControlActivatePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ControlStepPayload.TYPE, ControlStepPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ControlValueRequestPayload.TYPE, ControlValueRequestPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(ControlValueSyncPayload.TYPE, ControlValueSyncPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(TardisFlightPayload.TYPE, TardisFlightPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ControlValuePayload.TYPE, (payload, context) -> context.server().execute(() -> {
             if (!Float.isFinite(payload.value()) || payload.controlId().length() > 64) return;
@@ -70,6 +74,13 @@ public final class IntoTheVortex implements ModInitializer {
             if ((payload.direction() != -1.0F && payload.direction() != 1.0F) || payload.controlId().length() > 64) return;
             if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
             if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.stepControl(context.player(), payload.controlId(), payload.direction());
+        }));
+        ServerPlayNetworking.registerGlobalReceiver(ControlValueRequestPayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (payload.controlId().length() > 64 || context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
+            if (context.player().level().getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) {
+                com.intothevortex.interior.ControlUseContext control = com.intothevortex.interior.ControlUseContext.resolve(context.player(), console, payload.controlId());
+                if (control != null && control.validate() == com.intothevortex.interior.InteractionResult.SUCCESS) ServerPlayNetworking.send(context.player(), new ControlValueSyncPayload(payload.consolePos(), payload.controlId(), console.controlValue(payload.controlId())));
+            }
         }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             server.execute(() -> server.getAllLevels().forEach(level -> {
