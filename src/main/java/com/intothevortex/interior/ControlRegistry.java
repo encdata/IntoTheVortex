@@ -16,19 +16,19 @@ public final class ControlRegistry {
     private ControlRegistry() {}
 
     public static void initialize() {
-        register("anti_gravs", ConsoleInputType.SWITCH);
-        register("auto_pilot", ConsoleInputType.SWITCH);
-        register("cloak", ConsoleInputType.SWITCH);
-        register("dimension", ConsoleInputType.KNOB);
-        register("direction", ConsoleInputType.KNOB);
+        register("anti_gravs", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
+        register("auto_pilot", ControlBehaviors.AUTOPILOT, defaultModes(ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.SWITCH), ConsoleInputType.SWITCH);
+        register("cloak", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
+        register("dimension", ControlBehaviors.DIMENSION, ConsoleInputType.KNOB);
+        register("direction", ControlBehaviors.DIRECTION, ConsoleInputType.KNOB);
         register("door", ControlBehaviors.DOOR, defaultModes(ConsoleInputType.BUTTON, ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.BUTTON, ConsoleInputType.SWITCH), ConsoleInputType.BUTTON, ConsoleInputType.SWITCH);
         register("door_lock", ControlBehaviors.DOOR_LOCK, defaultModes(ConsoleInputType.KEY_SWITCH, ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.KEY_SWITCH, ConsoleInputType.BUTTON), ConsoleInputType.KEY_SWITCH, ConsoleInputType.BUTTON);
-        register("fast_return", ConsoleInputType.BUTTON);
-        register("hads", ConsoleInputType.SWITCH);
-        register("hail_mary", ConsoleInputType.BUTTON);
+        register("fast_return", ControlBehaviors.FAST_RETURN, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
+        register("hads", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
+        register("hail_mary", ControlBehaviors.HAIL_MARY, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("handbrake", ControlBehaviors.HANDBRAKE, defaultModes(ConsoleInputType.LEVER, ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.LEVER, ConsoleInputType.SWITCH), ConsoleInputType.LEVER, ConsoleInputType.SWITCH);
         register("land_type", ConsoleInputType.SWITCH, ConsoleInputType.BUTTON);
-        register("monitor", ConsoleInputType.BUTTON);
+        register("monitor", ControlBehaviors.MONITOR, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("monitor_upper", ConsoleInputType.BUTTON);
         register("monitor_left", ConsoleInputType.BUTTON);
         register("power", ControlBehaviors.POWER, defaultModes(ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.SWITCH), ConsoleInputType.SWITCH);
@@ -40,20 +40,24 @@ public final class ControlRegistry {
         register("telepathic", ConsoleInputType.BUTTON);
         register("throttle", ControlBehaviors.THROTTLE, defaultModes(ConsoleInputType.LEVER), defaultCapabilities(ConsoleInputType.LEVER), ConsoleInputType.LEVER);
         register("visualiser", ConsoleInputType.BUTTON);
-        register("engine_overload", ConsoleInputType.BUTTON);
-        register("electrical_discharge", ConsoleInputType.BUTTON);
-        register("shields", ConsoleInputType.SWITCH);
+        register("engine_overload", ControlBehaviors.TOGGLE, ConsoleInputType.BUTTON);
+        register("electrical_discharge", ControlBehaviors.ELECTRICAL_DISCHARGE, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
+        register("shields", ControlBehaviors.TOGGLE, ConsoleInputType.SWITCH);
         register("console_port", ConsoleInputType.BUTTON);
-        register("save_waypoint", ConsoleInputType.BUTTON);
-        register("load_waypoint", ConsoleInputType.BUTTON);
-        register("increment", ConsoleInputType.KNOB);
-        register("x", ConsoleInputType.KNOB);
-        register("y", ConsoleInputType.KNOB);
-        register("z", ConsoleInputType.KNOB);
+        register("save_waypoint", ControlBehaviors.SAVE_WAYPOINT, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
+        register("load_waypoint", ControlBehaviors.LOAD_WAYPOINT, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
+        register("increment", ControlBehaviors.INCREMENT, ConsoleInputType.KNOB);
+        register("x", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB);
+        register("y", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB);
+        register("z", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB);
     }
 
     public static RegisteredControl register(String path, ConsoleInputType... types) {
         return register(path, ControlBehaviors.DEFAULT, defaultModes(types), defaultCapabilities(types), types);
+    }
+
+    public static RegisteredControl register(String path, ControlBehavior behavior, ConsoleInputType... types) {
+        return register(path, behavior, defaultModes(types), defaultCapabilities(types), types);
     }
 
     public static RegisteredControl register(String path, ModeCallback callback, ConsoleInputType... types) {

@@ -22,6 +22,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import com.intothevortex.block.ModBlocks;
 import com.intothevortex.sound.ModSounds;
+import com.intothevortex.sound.ControlSoundManager;
 import com.intothevortex.exterior.TardisAnimationManager;
 import com.intothevortex.tardis.TardisTravelManager;
 import com.intothevortex.tardis.TardisFuelManager;
@@ -37,6 +38,7 @@ public final class IntoTheVortex implements ModInitializer {
     @Override
     public void onInitialize() {
         ModSounds.initialize();
+        ControlSoundManager.initialize();
         ExteriorRegistry.initialize();
         TardisAnimationManager.initializeTravel();
         ModEntityTypes.initialize();

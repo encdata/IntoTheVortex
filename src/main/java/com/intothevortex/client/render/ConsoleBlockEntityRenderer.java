@@ -48,7 +48,7 @@ public final class ConsoleBlockEntityRenderer implements BlockEntityRenderer<Con
         poseStack.mulPose(Axis.YN.rotationDegrees(180.0F));
         poseStack.mulPose(Axis.YP.rotationDegrees(state.facing.toYRot()));
         collector.submitModel(model, state.modelState, poseStack, RenderTypes.entityCutout(definition.texture()), state.lightCoords, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
-        if (state.powered && definition.emission() != null) collector.submitModel(model, state.modelState, poseStack, RenderTypes.entityTranslucentEmissive(definition.emission()), 15728880, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
+        if (state.powered && definition.emission() != null) collector.submitModel(model, state.modelState, poseStack, RenderTypes.entityTranslucentEmissive(definition.emission()), state.lightCoords, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
         poseStack.popPose();
     }
 }

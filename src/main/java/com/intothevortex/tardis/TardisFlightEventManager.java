@@ -40,6 +40,7 @@ public final class TardisFlightEventManager {
             highlight(level, next);
             return next;
         }
+        if (data.autopilot()) return data;
         if (data.flightTicks() < MIN_FLIGHT_BEFORE_EVENT || data.flightTicks() % EVENT_COOLDOWN != 0 || data.targetFlightTicks() - data.flightTicks() < 140) return data;
         List<FlightEventType> eligible = new ArrayList<>();
         int totalWeight = 0;

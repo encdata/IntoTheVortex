@@ -34,6 +34,9 @@ public final class ConsoleBlockEntity extends BlockEntity {
     private boolean refueling;
     private boolean hitboxesCreated;
     private boolean hitboxesScheduled;
+    private String waypointDimension;
+    private BlockPos waypointPosition;
+    private float waypointYaw;
 
     public ConsoleBlockEntity(BlockPos pos, BlockState state) { super(InteriorRegistry.CONSOLE_ENTITY, pos, state); }
 
@@ -45,6 +48,11 @@ public final class ConsoleBlockEntity extends BlockEntity {
     public float controlValue(String id) { return controlValues.getOrDefault(id, 0.0F); }
     public boolean powered() { return powered; }
     public boolean refueling() { return refueling; }
+    public void saveWaypoint(TardisData data) { waypointDimension = data.dimension(); waypointPosition = data.position(); waypointYaw = data.yaw(); setChanged(); }
+    public boolean hasWaypoint() { return waypointDimension != null && waypointPosition != null; }
+    public String waypointDimension() { return waypointDimension; }
+    public BlockPos waypointPosition() { return waypointPosition; }
+    public float waypointYaw() { return waypointYaw; }
     public ConsoleControlDefinition definition(String id) { return ConsoleRegistry.get(net.minecraft.resources.Identifier.parse(console)).controls().stream().filter(control -> control.id().equals(id)).findFirst().orElse(null); }
 
     public void setAuthoritativeValue(Player player, String id, float value, boolean released) {
@@ -182,8 +190,8 @@ public final class ConsoleBlockEntity extends BlockEntity {
             });
         }
     }
-    @Override protected void loadAdditional(ValueInput input) { super.loadAdditional(input); console = input.getString("console").orElse(ConsoleRegistry.TOYOTA.toString()); consoleUuid = input.read("console_uuid", net.minecraft.core.UUIDUtil.CODEC).orElse(null); powered = input.getBooleanOr("powered", false); refueling = input.getBooleanOr("refueling", false); for (ConsoleControlDefinition control : ConsoleRegistry.get(net.minecraft.resources.Identifier.parse(console)).controls()) controlValues.put(control.id(), input.getFloatOr("control_" + control.id(), 0.0F)); }
-    @Override protected void saveAdditional(ValueOutput output) { super.saveAdditional(output); output.putString("console", console); if (consoleUuid != null) output.store("console_uuid", net.minecraft.core.UUIDUtil.CODEC, consoleUuid); output.putBoolean("powered", powered); output.putBoolean("refueling", refueling); controlValues.forEach((id, value) -> output.putFloat("control_" + id, value)); }
+    @Override protected void loadAdditional(ValueInput input) { super.loadAdditional(input); console = input.getString("console").orElse(ConsoleRegistry.TOYOTA.toString()); consoleUuid = input.read("console_uuid", net.minecraft.core.UUIDUtil.CODEC).orElse(null); powered = input.getBooleanOr("powered", false); refueling = input.getBooleanOr("refueling", false); waypointDimension = input.getString("waypoint_dimension").orElse(null); waypointPosition = input.read("waypoint_position", BlockPos.CODEC).orElse(null); waypointYaw = input.getFloatOr("waypoint_yaw", 0.0F); for (ConsoleControlDefinition control : ConsoleRegistry.get(net.minecraft.resources.Identifier.parse(console)).controls()) controlValues.put(control.id(), input.getFloatOr("control_" + control.id(), 0.0F)); }
+    @Override protected void saveAdditional(ValueOutput output) { super.saveAdditional(output); output.putString("console", console); if (consoleUuid != null) output.store("console_uuid", net.minecraft.core.UUIDUtil.CODEC, consoleUuid); output.putBoolean("powered", powered); output.putBoolean("refueling", refueling); if (waypointDimension != null) output.putString("waypoint_dimension", waypointDimension); if (waypointPosition != null) output.store("waypoint_position", BlockPos.CODEC, waypointPosition); output.putFloat("waypoint_yaw", waypointYaw); controlValues.forEach((id, value) -> output.putFloat("control_" + id, value)); }
     @Override public Packet<ClientGamePacketListener> getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
     @Override public net.minecraft.nbt.CompoundTag getUpdateTag(HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }
 }

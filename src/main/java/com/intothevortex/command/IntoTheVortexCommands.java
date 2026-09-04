@@ -9,6 +9,7 @@ import com.intothevortex.exterior.ExteriorRegistry;
 import com.intothevortex.interior.InteriorRegistry;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
@@ -37,6 +38,13 @@ public final class IntoTheVortexCommands {
         SuggestionProvider<CommandSourceStack> doorAnimationSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(TardisAnimationManager.doorIds().stream().map(Object::toString).toList(), builder);
         SuggestionProvider<CommandSourceStack> phaseAnimationSuggestions = (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(TardisAnimationManager.phaseValues().stream().map(value -> value.id().toString()).toList(), builder);
         var root = Commands.literal("intothevortex").requires(source -> source.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_MODERATOR));
+        root.then(Commands.literal("info").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "info"))));
+        root.then(Commands.literal("travelstate").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "travelstate"))));
+        root.then(Commands.literal("event").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "event"))));
+        root.then(Commands.literal("fuel").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions)
+                .then(Commands.literal("get").executes(context -> modifyFuel(context, "get")))
+                .then(Commands.literal("set").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "set"))))
+                .then(Commands.literal("add").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "add"))))));
         root.then(Commands.literal("summon").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
             UUID id;
@@ -144,6 +152,60 @@ public final class IntoTheVortexCommands {
         String mat = channel.equals("mat") ? value.toString() : data.matAnimation();
         TardisManager.save(context.getSource().getServer(), data.withAnimations(door, demat, mat));
         context.getSource().sendSuccess(() -> Component.literal("TARDIS " + id + " " + channel + " animation set to " + value), false);
+        return 1;
+    }
+
+    private static int sendStatus(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, String category) {
+        UUID id;
+        try {
+            id = UUID.fromString(StringArgumentType.getString(context, "id"));
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal("Invalid TARDIS UUID."));
+            return 0;
+        }
+        TardisData data = TardisManager.get(context.getSource().getServer(), id);
+        if (data == null) {
+            context.getSource().sendFailure(Component.literal("Unknown TARDIS: " + id));
+            return 0;
+        }
+        if (category.equals("travelstate")) {
+            context.getSource().sendSuccess(() -> Component.literal("Travel: " + data.travelState() + " | Condition: " + data.flightCondition() + " | Progress: " + TardisTravelManager.progress(data) + "%"), false);
+        } else if (category.equals("event")) {
+            context.getSource().sendSuccess(() -> Component.literal("Event: " + (data.activeFlightEvent().isEmpty() ? "none" : data.activeFlightEvent()) + " | Control: " + data.activeEventControl() + " | Remaining: " + data.activeEventRemaining()), false);
+        } else {
+            context.getSource().sendSuccess(() -> Component.literal("TARDIS " + data.id() + " | Exterior: " + data.exterior() + " | Interior: " + data.interior() + " | Dimension: " + data.dimension() + " | Position: " + data.position() + " | Power: " + data.powered() + " | Stabilisers: " + data.autopilot()), false);
+        }
+        return 1;
+    }
+
+    private static int modifyFuel(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, String operation) {
+        UUID id;
+        try {
+            id = UUID.fromString(StringArgumentType.getString(context, "id"));
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal("Invalid TARDIS UUID."));
+            return 0;
+        }
+        TardisData data = TardisManager.get(context.getSource().getServer(), id);
+        if (data == null) {
+            context.getSource().sendFailure(Component.literal("Unknown TARDIS: " + id));
+            return 0;
+        }
+        if (operation.equals("get")) {
+            context.getSource().sendSuccess(() -> Component.literal("TARDIS fuel: " + data.fuel() + "/" + data.maxFuel()), false);
+            return 1;
+        }
+        double value = DoubleArgumentType.getDouble(context, "value");
+        if (!Double.isFinite(value)) {
+            context.getSource().sendFailure(Component.literal("Fuel value must be finite."));
+            return 0;
+        }
+        TardisData updated;
+        if (operation.equals("set")) updated = com.intothevortex.tardis.TardisFuelManager.setFuel(data, value);
+        else if (value >= 0.0D) updated = com.intothevortex.tardis.TardisFuelManager.addFuel(data, value);
+        else updated = com.intothevortex.tardis.TardisFuelManager.setFuel(data, data.fuel() + value);
+        TardisManager.save(context.getSource().getServer(), updated);
+        context.getSource().sendSuccess(() -> Component.literal("TARDIS fuel: " + updated.fuel() + "/" + updated.maxFuel()), false);
         return 1;
     }
 }
