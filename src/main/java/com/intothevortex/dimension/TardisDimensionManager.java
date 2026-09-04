@@ -274,6 +274,9 @@ public final class TardisDimensionManager {
             java.nio.file.Path dimensionPath = ((TardisDimensionServer) server).intothevortex$storageSource().getDimensionPath(key(id));
             if (java.nio.file.Files.exists(dimensionPath)) java.nio.file.Files.walk(dimensionPath).sorted(java.util.Comparator.reverseOrder()).forEach(path -> { try { java.nio.file.Files.deleteIfExists(path); } catch (java.io.IOException exception) { throw new java.io.UncheckedIOException(exception); } });
             java.nio.file.Files.deleteIfExists(server.getWorldPath(LevelResource.ROOT).resolve("IntoTheVortex").resolve(id + ".json"));
+            com.intothevortex.tardis.TardisManager.clearCanonicalExterior(server, id);
+            com.intothevortex.tardis.TardisControlStateManager.remove(server, id);
+            com.intothevortex.tardis.TardisLoyaltyManager.remove(server, id);
             EMPTY_TICKS.remove(id);
             INTERIOR_READY_CALLBACKS.remove(id);
             com.intothevortex.network.TardisFlightSync.forget(id);

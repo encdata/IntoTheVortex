@@ -17,12 +17,15 @@ import com.intothevortex.item.ModItems;
 import com.intothevortex.item.TardisLinking;
 import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.tardis.TardisAccessRegistry;
+import com.intothevortex.tardis.TardisControlStateManager;
 import com.intothevortex.network.RuntimeDimensionPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import com.intothevortex.sound.ModSounds;
 import com.intothevortex.tardis.DoorEvents;
 import com.intothevortex.tardis.TardisTravelState;
 import com.intothevortex.tardis.TardisTeleportCooldowns;
+import com.intothevortex.tardis.TardisLoyalty;
+import com.intothevortex.tardis.TardisLoyaltyManager;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -44,6 +47,8 @@ public final class TardisExteriorEntity extends Entity {
     private static final EntityDataAccessor<String> TRAVEL_ANIMATION = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DOOR_ANIMATION = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> POWERED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> CLOAKED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> SHIELDED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
     private UUID tardisId = new UUID(0L, 0L);
     private final Set<UUID> playersInDoorway = new HashSet<>();
 
@@ -74,6 +79,8 @@ public final class TardisExteriorEntity extends Entity {
     public String getTravelAnimation() { return entityData.get(TRAVEL_ANIMATION); }
     public String getDoorAnimation() { return entityData.get(DOOR_ANIMATION); }
     public boolean isPowered() { return entityData.get(POWERED); }
+    public boolean isCloaked() { return entityData.get(CLOAKED); }
+    public boolean isShielded() { return entityData.get(SHIELDED); }
     public void syncPowered(boolean value) { entityData.set(POWERED, value); }
 
     public void syncDoorState(boolean open) {
@@ -90,6 +97,8 @@ public final class TardisExteriorEntity extends Entity {
         builder.define(TRAVEL_ANIMATION, "intothevortex:default");
         builder.define(DOOR_ANIMATION, "intothevortex:door_swing");
         builder.define(POWERED, false);
+        builder.define(CLOAKED, false);
+        builder.define(SHIELDED, false);
     }
 
     @Override
@@ -121,9 +130,12 @@ public final class TardisExteriorEntity extends Entity {
             return InteractionResult.FAIL;
         }
         if (serverPlayer.getItemInHand(hand).is(ModItems.TARDIS_KEY)) {
-            if (!owner) return InteractionResult.FAIL;
             UUID linked = TardisLinking.get(serverPlayer.getItemInHand(hand));
-            if (linked != null && !linked.equals(tardisId)) return InteractionResult.FAIL;
+            if (linked == null || !linked.equals(tardisId)) return InteractionResult.FAIL;
+            if (!TardisLoyaltyManager.get(serverPlayer.level().getServer(), tardisId, serverPlayer.getUUID()).isAtLeast(TardisLoyalty.Rank.PILOT)) {
+                serverPlayer.sendSystemMessage(Component.literal("Your TARDIS loyalty is not high enough."));
+                return InteractionResult.FAIL;
+            }
             TardisData updated = tardis.withLocked(!tardis.locked()).withDoorOpen(false);
             TardisManager.save(serverPlayer.level().getServer(), updated);
             DoorEvents.fire(updated, false);
@@ -179,6 +191,18 @@ public final class TardisExteriorEntity extends Entity {
         }
         TardisData tardis = TardisManager.get(serverLevel.getServer(), tardisId);
         if (tardis == null) return;
+        UUID canonicalId = tardis.exteriorId();
+        if (!TardisManager.isCanonicalExterior(serverLevel.getServer(), tardisId, getUUID())) {
+            LOGGER.warn("Discarding non-canonical exterior {} for TARDIS {}; saved canonical entity is {}", getUUID(), tardisId, canonicalId);
+            discard();
+            return;
+        }
+        entityData.set(CLOAKED, TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "cloak"));
+        entityData.set(SHIELDED, TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "shields"));
+        if (tardis.travelState() == TardisTravelState.LANDED && !TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "anti_gravs") && blockPosition().distSqr(tardis.position()) > 0.0D) {
+            TardisData latest = TardisManager.get(serverLevel.getServer(), tardisId);
+            if (latest != null && TardisManager.isCanonicalExterior(serverLevel.getServer(), tardisId, getUUID()) && latest.travelState() == TardisTravelState.LANDED) TardisManager.save(serverLevel.getServer(), latest.withExteriorLocation(new com.intothevortex.tardis.TardisTravelDestination(serverLevel.dimension().identifier().toString(), blockPosition(), getYRot())));
+        }
         entityData.set(TRAVEL_STATE, tardis.travelState().name());
         entityData.set(TRAVEL_ANIMATION, tardis.travelState() == TardisTravelState.MAT ? tardis.matAnimation() : tardis.dematAnimation());
         entityData.set(DOOR_ANIMATION, tardis.doorAnimation());
@@ -265,7 +289,16 @@ public final class TardisExteriorEntity extends Entity {
 
     @Override
     public boolean isNoGravity() {
-        return true;
+        if (!(level() instanceof ServerLevel server)) return true;
+        return TardisControlStateManager.enabled(server.getServer(), tardisId, "anti_gravs");
+    }
+
+    @Override
+    public boolean isInvisibleTo(Player player) {
+        if (!isCloaked()) return false;
+        UUID linked = player.getMainHandItem().is(ModItems.TARDIS_KEY) ? TardisLinking.get(player.getMainHandItem()) : null;
+        if (linked == null && player.getOffhandItem().is(ModItems.TARDIS_KEY)) linked = TardisLinking.get(player.getOffhandItem());
+        return !tardisId.equals(linked);
     }
 
     @Override

@@ -17,4 +17,5 @@ public final class TardisExteriorRenderState extends EntityRenderState {
     public float consoleThrottle;
     public float consoleHandbrake;
     public boolean powered;
+    public boolean cloaked;
 }

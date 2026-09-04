@@ -19,6 +19,8 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
 public final class TardisTravelManager {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("IntoTheVortex/TardisTravel");
+
     private TardisTravelManager() {
     }
 
@@ -30,7 +32,14 @@ public final class TardisTravelManager {
         if (data == null || data.travelState() != TardisTravelState.LANDED) return false;
         ServerLevel level = (ServerLevel) player.level();
         float yaw = Mth.wrapDegrees(player.getYRot() + 180.0F);
-        return startTravel(server, id, new TardisTravelDestination(level.dimension().identifier().toString(), player.blockPosition(), yaw));
+        TardisData original = data;
+        if (data.getThrottleStage() <= 0) {
+            data = data.withFlightControls(1, data.isHandbrakeEngaged());
+            TardisManager.save(server, data);
+        }
+        boolean started = startTravel(server, id, new TardisTravelDestination(level.dimension().identifier().toString(), player.blockPosition(), yaw));
+        if (!started && data != original) TardisManager.save(server, original);
+        return started;
     }
 
     public static boolean startTravel(MinecraftServer server, UUID id, TardisTravelDestination requestedDestination) {
@@ -74,6 +83,14 @@ public final class TardisTravelManager {
         TardisData data = TardisManager.get(server, id);
         if (data == null || data.travelState() != TardisTravelState.FLIGHT || data.isCrashed()) return false;
         TardisManager.save(server, data.withTravel(TardisTravelState.FLIGHT, 0, data.targetFlightTicks(), data.targetFlightTicks(), source(data), destination(data)));
+        return true;
+    }
+
+    public static boolean recover(MinecraftServer server, UUID id) {
+        TardisData data = TardisManager.get(server, id);
+        if (data == null || !data.isCrashed() || data.travelState() != TardisTravelState.LANDED) return false;
+        TardisData recovered = data.withFlightCondition(FlightCondition.NORMAL).withFailure(FlightFailureType.NONE, "").withTravelFuel(0.0D, false).withDoorOpen(false).withLocked(true);
+        TardisManager.save(server, recovered);
         return true;
     }
 
@@ -121,7 +138,10 @@ public final class TardisTravelManager {
             case FLIGHT -> {
                 TardisData updated = data.withTravel(TardisTravelState.FLIGHT, 0, data.flightTicks() + 1, data.targetFlightTicks(), source(data), destination(data));
                 updated = TardisFlightEventManager.tick(server, updated);
-                if (updated.flightTicks() >= updated.targetFlightTicks()) beginMaterialization(server, updated); else TardisManager.save(server, updated);
+                if (updated.flightTicks() >= updated.targetFlightTicks()) {
+                    TardisManager.markExteriorSpawnPending(server, updated.id());
+                    beginMaterialization(server, updated);
+                } else TardisManager.save(server, updated);
             }
             case MAT -> {
                 TardisData updated = data.withTravel(TardisTravelState.MAT, data.phaseTicks() + 1, data.flightTicks(), data.targetFlightTicks(), source(data), destination(data));
@@ -139,24 +159,32 @@ public final class TardisTravelManager {
     private static void beginMaterialization(MinecraftServer server, TardisData data) {
         TardisTravelDestination requested = requested(data);
         ServerLevel level = server.getLevel(TardisDimensionManager.parseDimension(requested.dimension()));
-        LandingResult landing = TardisLandingSearch.resolve(level, requested, LandingSearchMode.NORMAL);
+        LandingType landingType = TardisLandingSearch.configuredType(server, data.id());
+        LandingResult landing = TardisLandingSearch.resolve(level, requested, LandingSearchMode.NORMAL, landingType);
         boolean emergency = false;
         if (!landing.success()) {
             emergency = true;
             FlightFailure failure = new FlightFailure(FlightFailureType.LANDING_SEARCH_FAILED, FlightFailureSeverity.EMERGENCY, true, landing.reason().name());
             TardisData emergencyState = crash(server, data.id(), failure) ? TardisManager.get(server, data.id()) : TardisCrashManager.fail(data, failure);
-            LandingResult fallback = TardisLandingSearch.resolve(level, requested, LandingSearchMode.EMERGENCY);
+            LandingResult fallback = TardisLandingSearch.resolve(level, requested, LandingSearchMode.EMERGENCY, landingType);
             if (!fallback.success()) {
                 ServerLevel sourceLevel = server.getLevel(TardisDimensionManager.parseDimension(data.travelSourceDimension()));
-                LandingResult sourceFallback = TardisLandingSearch.resolve(sourceLevel, source(data), LandingSearchMode.EMERGENCY);
-                if (!sourceFallback.success()) {
-                    TardisData terminal = TardisCrashManager.fail(emergencyState, new FlightFailure(FlightFailureType.LANDING_SEARCH_FAILED, FlightFailureSeverity.TERMINAL, false, fallback.reason().name()));
-                    TardisManager.save(server, terminal);
-                    return;
+                ServerLevel entityLevel = level != null ? level : sourceLevel;
+                TardisTravelDestination entityFallback = entityLevel == null ? null : entityEmergencyLanding(entityLevel, requested);
+                if (entityFallback != null) {
+                    level = entityLevel;
+                    landing = new LandingResult(true, LandingReason.SUCCESS_NEARBY, requested, entityFallback, 0.0D, 0.0D);
+                } else {
+                    LandingResult sourceFallback = TardisLandingSearch.resolve(sourceLevel, source(data), LandingSearchMode.EMERGENCY);
+                    if (!sourceFallback.success()) {
+                        TardisData terminal = TardisCrashManager.fail(emergencyState, new FlightFailure(FlightFailureType.LANDING_SEARCH_FAILED, FlightFailureSeverity.TERMINAL, false, fallback.reason().name()));
+                        TardisManager.save(server, terminal);
+                        return;
+                    }
+                    level = sourceLevel;
+                    landing = sourceFallback;
+                    requested = source(data);
                 }
-                level = sourceLevel;
-                landing = sourceFallback;
-                requested = source(data);
             } else {
                 landing = fallback;
             }
@@ -169,18 +197,37 @@ public final class TardisTravelManager {
         playTransitionSound(server, updated, ModSounds.TARDIS_MAT);
     }
 
+    private static TardisTravelDestination entityEmergencyLanding(ServerLevel level, TardisTravelDestination requested) {
+        BlockPos position = requested.position();
+        if (position == null || position.getX() < level.getWorldBorder().getMinX() || position.getX() > level.getWorldBorder().getMaxX() || position.getZ() < level.getWorldBorder().getMinZ() || position.getZ() > level.getWorldBorder().getMaxZ()) return null;
+        return new TardisTravelDestination(level.dimension().identifier().toString(), new BlockPos(position.getX(), 400, position.getZ()), requested.yaw());
+    }
+
     private static void finishMaterialization(MinecraftServer server, TardisData data) {
-        TardisData landed = data.withLanded(destination(data));
+        TardisData landed = data.withLanded(destination(data)).withFlightControls(0, data.isHandbrakeEngaged());
         if (landed.flightCondition() == FlightCondition.EMERGENCY_LANDING) landed = landed.withFlightCondition(FlightCondition.CRASHED);
         else landed = landed.withFlightCondition(FlightCondition.NORMAL).withFailure(FlightFailureType.NONE, "");
+        TardisControlStateManager.set(server, landed.id(), "throttle", 0.0F);
         TardisManager.save(server, landed);
     }
 
     private static void discardExterior(MinecraftServer server, TardisData data) {
         ServerLevel level = server.getLevel(TardisDimensionManager.parseDimension(data.dimension()));
         if (level == null) return;
+        level.getChunkAt(data.position());
         var entity = level.getEntity(data.exteriorId());
-        if (entity instanceof TardisExteriorEntity exterior) exterior.discard();
+        if (entity instanceof TardisExteriorEntity exterior) {
+            exterior.discard();
+            LOGGER.info("Removed canonical exterior {} for TARDIS {} before takeoff", exterior.getUUID(), data.id());
+        }
+        int removed = 0;
+        for (var loaded : level.getAllEntities()) {
+            if (loaded instanceof TardisExteriorEntity exterior && exterior.getTardisId().equals(data.id()) && !exterior.isRemoved()) {
+                exterior.discard();
+                removed++;
+            }
+        }
+        if (removed > 0) LOGGER.info("Removed {} additional exterior duplicate(s) for TARDIS {} before takeoff", removed, data.id());
     }
 
     private static void playTransitionSound(MinecraftServer server, TardisData data, net.minecraft.sounds.SoundEvent sound) {

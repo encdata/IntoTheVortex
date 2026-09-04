@@ -22,6 +22,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import com.intothevortex.tardis.TardisData;
 import com.intothevortex.tardis.TardisManager;
+import com.intothevortex.tardis.TardisControlStateManager;
 import com.intothevortex.dimension.TardisDimensionManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -81,6 +82,8 @@ public final class ConsoleBlockEntity extends BlockEntity {
         if (id.equals("handbrake")) bounded = bounded >= 0.5F ? 1.0F : 0.0F;
         if (released && definition.inputType() == ConsoleInputType.MOMENTARY_BUTTON) bounded = 0.0F;
         controlValues.put(id, bounded);
+        UUID tardisId = TardisDimensionManager.id(server.dimension());
+        if (tardisId != null) TardisControlStateManager.set(server.getServer(), tardisId, id, bounded);
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         sendControlValue(server, id, bounded);
@@ -136,6 +139,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
         if (data != null) {
             TardisManager.save(server.getServer(), data.withPowered(value));
+            TardisControlStateManager.set(server.getServer(), tardisId, "power", value ? 1.0F : 0.0F);
             InteriorDoorBlock.syncPower(server, tardisId, value);
         }
         setChanged();
@@ -150,7 +154,10 @@ public final class ConsoleBlockEntity extends BlockEntity {
         controlValues.put("refueler", value ? 1.0F : 0.0F);
         java.util.UUID tardisId = TardisDimensionManager.id(server.dimension());
         TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
-        if (data != null) TardisManager.save(server.getServer(), data.withRefueling(value));
+        if (data != null) {
+            TardisManager.save(server.getServer(), data.withRefueling(value));
+            TardisControlStateManager.set(server.getServer(), tardisId, "refueler", value ? 1.0F : 0.0F);
+        }
         setChanged();
         server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         sendControlValue(server, "refueler", value ? 1.0F : 0.0F);
@@ -164,6 +171,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
         if (data != null) {
             TardisData updated = data.withFlightControls(data.getThrottleStage(), value);
+            TardisControlStateManager.set(server.getServer(), tardisId, "handbrake", value ? 1.0F : 0.0F);
             TardisManager.save(server.getServer(), updated);
             if (!value && updated.getThrottleStage() > 0) com.intothevortex.tardis.TardisTravelManager.tryFly(server.getServer(), updated.id());
         }
@@ -181,6 +189,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         TardisData data = tardisId == null ? null : TardisManager.get(server.getServer(), tardisId);
         if (data != null) {
             TardisData updated = data.withFlightControls(stage, data.isHandbrakeEngaged());
+            TardisControlStateManager.set(server.getServer(), tardisId, "throttle", stage);
             TardisManager.save(server.getServer(), updated);
             if (stage > 0 && !updated.isHandbrakeEngaged()) com.intothevortex.tardis.TardisTravelManager.tryFly(server.getServer(), updated.id());
         }
@@ -225,6 +234,9 @@ public final class ConsoleBlockEntity extends BlockEntity {
                 java.util.UUID tardisId = TardisDimensionManager.id(((ServerLevel) level).dimension());
                 TardisData data = tardisId == null ? null : TardisManager.get(level.getServer(), tardisId);
                 if (data != null) {
+                    controlValues.putAll(TardisControlStateManager.snapshot(level.getServer(), data.id()));
+                    controlValues.putIfAbsent("anti_gravs", TardisControlStateManager.enabled(level.getServer(), data.id(), "anti_gravs") ? 1.0F : 0.0F);
+                    controlValues.putIfAbsent("land_type", 3.0F);
                     powered = data.powered();
                     refueling = data.refueling();
                     controlValues.put("throttle", (float) data.getThrottleStage());
@@ -237,7 +249,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
             });
         }
     }
-    @Override protected void loadAdditional(ValueInput input) { super.loadAdditional(input); console = input.getString("console").orElse(ConsoleRegistry.TOYOTA.toString()); consoleUuid = input.read("console_uuid", net.minecraft.core.UUIDUtil.CODEC).orElse(null); powered = input.getBooleanOr("powered", false); refueling = input.getBooleanOr("refueling", false); waypointDimension = input.getString("waypoint_dimension").orElse(null); waypointPosition = input.read("waypoint_position", BlockPos.CODEC).orElse(null); waypointYaw = input.getFloatOr("waypoint_yaw", 0.0F); for (ConsoleControlDefinition control : ConsoleRegistry.get(net.minecraft.resources.Identifier.parse(console)).controls()) controlValues.put(control.id(), input.getFloatOr("control_" + control.id(), 0.0F)); }
+    @Override protected void loadAdditional(ValueInput input) { super.loadAdditional(input); console = input.getString("console").orElse(ConsoleRegistry.TOYOTA.toString()); consoleUuid = input.read("console_uuid", net.minecraft.core.UUIDUtil.CODEC).orElse(null); powered = input.getBooleanOr("powered", false); refueling = input.getBooleanOr("refueling", false); waypointDimension = input.getString("waypoint_dimension").orElse(null); waypointPosition = input.read("waypoint_position", BlockPos.CODEC).orElse(null); waypointYaw = input.getFloatOr("waypoint_yaw", 0.0F); for (ConsoleControlDefinition control : ConsoleRegistry.get(net.minecraft.resources.Identifier.parse(console)).controls()) controlValues.put(control.id(), input.getFloatOr("control_" + control.id(), control.id().equals("land_type") ? 3.0F : 0.0F)); }
     @Override protected void saveAdditional(ValueOutput output) { super.saveAdditional(output); output.putString("console", console); if (consoleUuid != null) output.store("console_uuid", net.minecraft.core.UUIDUtil.CODEC, consoleUuid); output.putBoolean("powered", powered); output.putBoolean("refueling", refueling); if (waypointDimension != null) output.putString("waypoint_dimension", waypointDimension); if (waypointPosition != null) output.store("waypoint_position", BlockPos.CODEC, waypointPosition); output.putFloat("waypoint_yaw", waypointYaw); controlValues.forEach((id, value) -> output.putFloat("control_" + id, value)); }
     @Override public Packet<ClientGamePacketListener> getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
     @Override public net.minecraft.nbt.CompoundTag getUpdateTag(HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }

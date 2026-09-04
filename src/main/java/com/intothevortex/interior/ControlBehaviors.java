@@ -245,9 +245,9 @@ public final class ControlBehaviors {
 
     public static final ControlBehavior LAND_TYPE = new ControlBehavior() {
         @Override public InteractionResult onPress(ControlUseContext context) {
-            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
+            float value = (Math.round(context.currentValue()) + 1) % com.intothevortex.tardis.LandingType.values().length;
             context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
-            send(context.player(), "Landing mode: " + (value >= 0.5F ? "Precise" : "Safe"));
+            send(context.player(), "Landing mode: " + com.intothevortex.tardis.LandingType.fromValue(value).name());
             return InteractionResult.SUCCESS;
         }
     };

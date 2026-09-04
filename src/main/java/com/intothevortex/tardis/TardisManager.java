@@ -10,20 +10,33 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelResource;
 import com.intothevortex.exterior.TardisAnimationManager;
 import net.minecraft.resources.Identifier;
 
 public final class TardisManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("IntoTheVortex/TardisExterior");
+    private static final Map<MinecraftServer, Map<UUID, TardisData>> ACTIVE_TARDISES = new WeakHashMap<>();
+    private static final Map<MinecraftServer, Map<UUID, UUID>> ACTIVE_EXTERIOR_ENTITIES = new WeakHashMap<>();
+    private static final Map<MinecraftServer, Map<UUID, Long>> EXTERIOR_SPAWN_PENDING = new WeakHashMap<>();
+    private static final Map<MinecraftServer, Map<UUID, UUID>> CANONICAL_EXTERIORS = new WeakHashMap<>();
+    private static final Map<MinecraftServer, Set<UUID>> RECONCILIATIONS_QUEUED = new WeakHashMap<>();
+    private static final Map<MinecraftServer, Map<UUID, Long>> LAST_RECOVERY_ATTEMPTS = new WeakHashMap<>();
+    private static final long RECOVERY_COOLDOWN_TICKS = 200L;
     private TardisManager() {
     }
 
@@ -59,45 +72,247 @@ public final class TardisManager {
                 owner.getYRot() + 180.0F
         );
         save(level.getServer(), tardis);
+        TardisLoyaltyManager.initialize(level.getServer(), tardis.id(), tardis.ownerId());
         return spawnExterior(level.getServer(), tardis);
     }
 
     public static TardisData spawnExterior(MinecraftServer server, TardisData tardis) {
+        markExteriorSpawnPending(server, tardis.id());
         ServerLevel level = getLevel(server, tardis.dimension());
         if (level == null) {
+            LOGGER.warn("Cannot reconcile exterior for TARDIS {}: dimension {} is not loaded", tardis.id(), tardis.dimension());
+            clearExteriorSpawnPending(server, tardis.id());
             return tardis;
         }
-        TardisExteriorEntity entity = new TardisExteriorEntity(level, tardis.id());
+        double x = tardis.position().getX() + 0.5D;
+        double y = tardis.position().getY();
+        double z = tardis.position().getZ() + 0.5D;
+        TardisExteriorEntity entity = findExterior(level, tardis);
+        boolean existing = entity != null;
+        if (!existing) {
+            entity = new TardisExteriorEntity(level, tardis.id());
+            UUID savedExteriorId = tardis.exteriorId();
+            if (!isZero(savedExteriorId)) entity.setUUID(savedExteriorId);
+        }
+        int duplicates = removeDuplicateExteriors(level, tardis.id(), entity);
         entity.setExterior(tardis.exterior());
-        entity.setPos(tardis.position().getX() + 0.5, tardis.position().getY(), tardis.position().getZ() + 0.5);
+        entity.setPos(x, y, z);
         entity.setYRot(tardis.yaw());
         entity.setYHeadRot(tardis.yaw());
-        level.addFreshEntity(entity);
+        entity.syncDoorState(tardis.doorOpen() && !tardis.locked());
         TardisData updated = tardis.withExterior(entity.getUUID());
-        save(server, updated);
+        ACTIVE_EXTERIOR_ENTITIES.computeIfAbsent(server, ignored -> new HashMap<>()).put(updated.id(), entity.getUUID());
+        saveCanonicalExterior(server, updated);
+        if (!existing) level.addFreshEntity(entity);
+        clearExteriorSpawnPending(server, tardis.id());
+        LOGGER.info("{} exterior entity {} for TARDIS {} at {} in {}{}", existing ? "Reconciled" : "Created", entity.getUUID(), tardis.id(), tardis.position(), tardis.dimension(), duplicates == 0 ? "" : "; removed " + duplicates + " duplicate(s)");
         TardisAnimationManager.register(updated.id(), Identifier.parse(updated.exterior()));
         return updated;
     }
 
+    private static int removeDuplicateExteriors(ServerLevel level, UUID tardisId, TardisExteriorEntity keep) {
+        int removed = 0;
+        for (var entity : level.getAllEntities()) {
+            if (entity instanceof TardisExteriorEntity exterior && exterior != keep && exterior.getTardisId().equals(tardisId)) {
+                exterior.discard();
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    private static TardisExteriorEntity findExterior(ServerLevel level, TardisData tardis) {
+        level.getChunkAt(tardis.position());
+        LOGGER.debug("Reconciling exterior chunk for TARDIS {} at {}", tardis.id(), tardis.position());
+        UUID savedId = tardis.exteriorId();
+        if (savedId != null && !savedId.equals(new UUID(0L, 0L))) {
+            var savedEntity = level.getEntity(savedId);
+            if (savedEntity instanceof TardisExteriorEntity exterior && exterior.getTardisId().equals(tardis.id())) return exterior;
+        }
+        if (isZero(savedId)) for (var entity : level.getAllEntities()) {
+            if (entity instanceof TardisExteriorEntity exterior && exterior.getTardisId().equals(tardis.id())) return exterior;
+        }
+        return null;
+    }
+
     public static TardisData get(MinecraftServer server, UUID id) {
+        Map<UUID, TardisData> active = ACTIVE_TARDISES.get(server);
+        if (active != null) {
+            TardisData cached = active.get(id);
+            if (cached != null) return cached;
+        }
         Path file = folder(server).resolve(id + ".json");
         if (!Files.isRegularFile(file)) {
             return null;
         }
         try {
             StoredTardis stored = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), StoredTardis.class);
-            return stored.toData().sanitized();
+            TardisData loaded = stored.toData().sanitized();
+            ACTIVE_TARDISES.computeIfAbsent(server, ignored -> new HashMap<>()).put(id, loaded);
+            CANONICAL_EXTERIORS.computeIfAbsent(server, ignored -> new HashMap<>()).put(id, loaded.exteriorId());
+            if (!isZero(loaded.exteriorId())) ACTIVE_EXTERIOR_ENTITIES.computeIfAbsent(server, ignored -> new HashMap<>()).put(id, loaded.exteriorId());
+            return loaded;
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static void save(MinecraftServer server, TardisData tardis) {
+        TardisData normalized = tardis.sanitized();
+        TardisData active = active(server, normalized.id());
+        if (active != null && active != tardis && !active.exteriorId().equals(normalized.exteriorId())) {
+            LOGGER.debug("Preserving active exterior {} for TARDIS {} over stale save {}", active.exteriorId(), normalized.id(), normalized.exteriorId());
+            normalized = normalized.withExterior(active.exteriorId());
+        }
+        putActive(server, normalized);
+        write(server, normalized);
+    }
+
+    public static void saveCanonicalExterior(MinecraftServer server, TardisData tardis) {
+        TardisData normalized = tardis.sanitized();
+        putActive(server, normalized);
+        CANONICAL_EXTERIORS.computeIfAbsent(server, ignored -> new HashMap<>()).put(normalized.id(), normalized.exteriorId());
+        write(server, normalized);
+    }
+
+    private static TardisData active(MinecraftServer server, UUID id) {
+        Map<UUID, TardisData> values = ACTIVE_TARDISES.get(server);
+        return values == null ? null : values.get(id);
+    }
+
+    private static void putActive(MinecraftServer server, TardisData tardis) {
+        ACTIVE_TARDISES.computeIfAbsent(server, ignored -> new HashMap<>()).put(tardis.id(), tardis);
+        CANONICAL_EXTERIORS.computeIfAbsent(server, ignored -> new HashMap<>()).put(tardis.id(), tardis.exteriorId());
+    }
+
+    private static UUID canonicalExterior(MinecraftServer server, UUID tardisId) {
+        Map<UUID, UUID> values = CANONICAL_EXTERIORS.get(server);
+        if (values != null && values.containsKey(tardisId)) return values.get(tardisId);
+        TardisData current = get(server, tardisId);
+        if (current == null) return null;
+        UUID exteriorId = current.exteriorId();
+        CANONICAL_EXTERIORS.computeIfAbsent(server, ignored -> new HashMap<>()).put(tardisId, exteriorId);
+        return exteriorId;
+    }
+
+    public static void clearCanonicalExterior(MinecraftServer server, UUID tardisId) {
+        Map<UUID, UUID> values = CANONICAL_EXTERIORS.get(server);
+        if (values != null) values.remove(tardisId);
+        Map<UUID, TardisData> active = ACTIVE_TARDISES.get(server);
+        if (active != null) active.remove(tardisId);
+        Map<UUID, UUID> entities = ACTIVE_EXTERIOR_ENTITIES.get(server);
+        if (entities != null) entities.remove(tardisId);
+        Set<UUID> queued = RECONCILIATIONS_QUEUED.get(server);
+        if (queued != null) queued.remove(tardisId);
+        Map<UUID, Long> attempts = LAST_RECOVERY_ATTEMPTS.get(server);
+        if (attempts != null) attempts.remove(tardisId);
+        Map<UUID, Long> pending = EXTERIOR_SPAWN_PENDING.get(server);
+        if (pending != null) pending.remove(tardisId);
+    }
+
+    public static boolean isCanonicalExterior(MinecraftServer server, UUID tardisId, UUID entityId) {
+        Map<UUID, UUID> entities = ACTIVE_EXTERIOR_ENTITIES.get(server);
+        if (entities != null && entities.containsKey(tardisId)) return entityId.equals(entities.get(tardisId));
+        TardisData data = get(server, tardisId);
+        return data != null && entityId.equals(data.exteriorId());
+    }
+
+    public static void reconcileLoadedChunk(ServerLevel level, LevelChunk chunk) {
+        MinecraftServer server = level.getServer();
+        String dimension = level.dimension().identifier().toString();
+        for (UUID id : ids(server)) {
+            TardisData data = get(server, id);
+            if (data == null || (data.travelState() != TardisTravelState.LANDED && data.travelState() != TardisTravelState.MAT) || !dimension.equals(data.dimension())) continue;
+            if ((data.position().getX() >> 4) != chunk.getPos().x() || (data.position().getZ() >> 4) != chunk.getPos().z()) continue;
+            Set<UUID> queued = RECONCILIATIONS_QUEUED.computeIfAbsent(server, ignored -> new HashSet<>());
+            queued.add(id);
+        }
+    }
+
+    public static void tickReconciliations(MinecraftServer server) {
+        Set<UUID> queued = RECONCILIATIONS_QUEUED.get(server);
+        if (queued == null || queued.isEmpty()) return;
+        UUID[] ids = queued.toArray(UUID[]::new);
+        for (UUID id : ids) {
+            try {
+                TardisData data = get(server, id);
+                    if (data != null && (data.travelState() == TardisTravelState.LANDED || data.travelState() == TardisTravelState.MAT) && recoveryAttemptAllowed(server, id)) {
+                        markRecoveryAttempt(server, id);
+                        spawnExterior(server, data);
+                    }
+            } finally {
+                queued.remove(id);
+            }
+        }
+    }
+
+    public static void tickLoadedExteriorRecovery(MinecraftServer server) {
+        for (UUID id : ids(server)) {
+            TardisData data = get(server, id);
+            if (data == null || (data.travelState() != TardisTravelState.LANDED && data.travelState() != TardisTravelState.MAT)) continue;
+            if (isExteriorSpawnPending(server, id)) continue;
+            ServerLevel level = getLevel(server, data.dimension());
+            if (level == null || !level.hasChunkAt(data.position())) continue;
+            if (isCanonicalExteriorLoaded(level, data)) continue;
+            if (!recoveryAttemptAllowed(server, id)) continue;
+            markRecoveryAttempt(server, id);
+            spawnExterior(server, data);
+        }
+    }
+
+    public static void markExteriorSpawnPending(MinecraftServer server, UUID tardisId) {
+        EXTERIOR_SPAWN_PENDING.computeIfAbsent(server, ignored -> new HashMap<>()).put(tardisId, (long) server.getTickCount());
+    }
+
+    public static void clearExteriorSpawnPending(MinecraftServer server, UUID tardisId) {
+        Map<UUID, Long> pending = EXTERIOR_SPAWN_PENDING.get(server);
+        if (pending != null) pending.remove(tardisId);
+    }
+
+    private static boolean isExteriorSpawnPending(MinecraftServer server, UUID tardisId) {
+        Map<UUID, Long> pending = EXTERIOR_SPAWN_PENDING.get(server);
+        if (pending == null) return false;
+        Long started = pending.get(tardisId);
+        if (started == null) return false;
+        if (server.getTickCount() - started > RECOVERY_COOLDOWN_TICKS) {
+            pending.remove(tardisId);
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean isCanonicalExteriorLoaded(ServerLevel level, TardisData data) {
+        UUID canonical = data.exteriorId();
+        if (!isZero(canonical)) {
+            var entity = level.getEntity(canonical);
+            if (entity instanceof TardisExteriorEntity exterior && exterior.getTardisId().equals(data.id()) && !exterior.isRemoved()) return true;
+        }
+        for (var entity : level.getAllEntities()) {
+            if (entity instanceof TardisExteriorEntity exterior && exterior.getTardisId().equals(data.id()) && !exterior.isRemoved()) return true;
+        }
+        return false;
+    }
+
+    private static boolean recoveryAttemptAllowed(MinecraftServer server, UUID tardisId) {
+        Map<UUID, Long> attempts = LAST_RECOVERY_ATTEMPTS.get(server);
+        if (attempts == null) return true;
+        Long last = attempts.get(tardisId);
+        return last == null || server.getTickCount() - last >= RECOVERY_COOLDOWN_TICKS;
+    }
+
+    private static void markRecoveryAttempt(MinecraftServer server, UUID tardisId) {
+        LAST_RECOVERY_ATTEMPTS.computeIfAbsent(server, ignored -> new HashMap<>()).put(tardisId, (long) server.getTickCount());
+    }
+
+    private static boolean isZero(UUID value) {
+        return value == null || value.equals(new UUID(0L, 0L));
+    }
+
+    private static void write(MinecraftServer server, TardisData tardis) {
         try {
-            TardisData normalized = tardis.sanitized();
             Files.createDirectories(folder(server));
-            Files.writeString(folder(server).resolve(normalized.id() + ".json"), GSON.toJson(StoredTardis.from(normalized)), StandardCharsets.UTF_8);
-            com.intothevortex.network.TardisFlightSync.sendIfChanged(server, normalized);
+            Files.writeString(folder(server).resolve(tardis.id() + ".json"), GSON.toJson(StoredTardis.from(tardis)), StandardCharsets.UTF_8);
+            com.intothevortex.network.TardisFlightSync.sendIfChanged(server, tardis);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }

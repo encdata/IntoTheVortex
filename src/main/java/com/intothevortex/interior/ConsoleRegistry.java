@@ -30,7 +30,7 @@ public final class ConsoleRegistry {
                 control("visualiser", ConsoleInputType.BUTTON, -1.223047F, 0.55F, 0.600782F, 0.2375F, 0.0875F, "visualiser"),
                 control("security", ConsoleInputType.SWITCH, 0.191406F, 0.775F, 0.751953F, 0.075F, 0.1625F, "security"),
                 control("telepathic", ConsoleInputType.BUTTON, 0.925F, 0.5625F, 0.539063F, 0.8F, 0.1875F, "telepathic"),
-                control("land_type", ConsoleInputType.BUTTON, -0.399219F, 0.6775F, -1.06875F, 0.1625F, 0.15F, "land_type"),
+                control("land_type", ConsoleInputType.BUTTON, -0.399219F, 0.6775F, -1.06875F, 0.1625F, 0.15F, "land_type", 0.0F, 3.0F),
                 control("increment", ConsoleInputType.KNOB, -0.8875F, 0.6500F, -0.773438F, 0.1125F, 0.1F, "increment"),
                 control("x", ConsoleInputType.KNOB, -0.786719F, 0.7F, -0.545313F, 0.0875F, 0.0875F, "x", -29999999.0F, 29999999.0F),
                 control("y", ConsoleInputType.KNOB, -1.046875F, 0.65F, -0.435938F, 0.0875F, 0.0875F, "y", -2032.0F, 2031.0F),

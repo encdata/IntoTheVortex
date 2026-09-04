@@ -22,6 +22,7 @@ import com.intothevortex.interior.InteriorRegistry;
 import com.intothevortex.item.ModItems;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import com.intothevortex.block.ModBlocks;
 import com.intothevortex.sound.ModSounds;
 import com.intothevortex.sound.ControlSoundManager;
@@ -52,6 +53,8 @@ public final class IntoTheVortex implements ModInitializer {
         ModBlocks.initialize();
 
         ModItems.initialize();
+
+        ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> TardisManager.reconcileLoadedChunk(level, chunk));
 
         PayloadTypeRegistry.clientboundPlay().register(RuntimeDimensionPayload.TYPE, RuntimeDimensionPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ControlValuePayload.TYPE, ControlValuePayload.CODEC);
@@ -99,6 +102,8 @@ public final class IntoTheVortex implements ModInitializer {
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            TardisManager.tickReconciliations(server);
+            if (server.getTickCount() % 20 == 0) TardisManager.tickLoadedExteriorRecovery(server);
             TardisDimensionManager.tick(server);
             InteriorDoorBlock.tickExits(server);
             TardisFuelManager.tick(server);

@@ -25,6 +25,9 @@ import net.minecraft.resources.Identifier;
 import com.intothevortex.exterior.TardisAnimationManager;
 import com.intothevortex.tardis.TardisTravelManager;
 import com.intothevortex.tardis.TardisTeleportCooldowns;
+import com.intothevortex.tardis.TardisLoyalty;
+import com.intothevortex.tardis.TardisLoyaltyManager;
+import net.minecraft.commands.arguments.EntityArgument;
 
 public final class IntoTheVortexCommands {
     private IntoTheVortexCommands() {}
@@ -41,10 +44,12 @@ public final class IntoTheVortexCommands {
         root.then(Commands.literal("info").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "info"))));
         root.then(Commands.literal("travelstate").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "travelstate"))));
         root.then(Commands.literal("event").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "event"))));
+        root.then(Commands.literal("recover").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> recover(context))));
         root.then(Commands.literal("fuel").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions)
                 .then(Commands.literal("get").executes(context -> modifyFuel(context, "get")))
                 .then(Commands.literal("set").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "set"))))
                 .then(Commands.literal("add").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "add"))))));
+        root.then(Commands.literal("loyalty").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).then(Commands.argument("player", EntityArgument.player()).executes(context -> modifyLoyalty(context, false)).then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 500)).executes(context -> modifyLoyalty(context, true))))));
         root.then(Commands.literal("summon").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
             UUID id;
@@ -56,6 +61,11 @@ public final class IntoTheVortexCommands {
             }
             if (com.intothevortex.dimension.TardisDimensionManager.id(player.level().dimension()) != null) {
                 context.getSource().sendFailure(Component.literal("You cannot summon a TARDIS from inside a TARDIS."));
+                return 0;
+            }
+            TardisData data = TardisManager.get(context.getSource().getServer(), id);
+            if (data == null) {
+                context.getSource().sendFailure(Component.literal("Unknown TARDIS: " + id));
                 return 0;
             }
             if (!TardisTravelManager.summon(player, id)) {
@@ -82,15 +92,21 @@ public final class IntoTheVortexCommands {
             var level = TardisDimensionManager.ensureLoaded(context.getSource().getServer(), id);
             String target = StringArgumentType.getString(context, "target");
             if (target.equals("exterior")) {
+                if (data.travelState() != com.intothevortex.tardis.TardisTravelState.LANDED) {
+                    context.getSource().sendFailure(Component.literal("The TARDIS is still travelling."));
+                    return 0;
+                }
+                data = TardisManager.spawnExterior(context.getSource().getServer(), data);
                 level = context.getSource().getServer().getLevel(TardisDimensionManager.parseDimension(data.dimension()));
                 if (level == null) { context.getSource().sendFailure(Component.literal("Exterior dimension is not loaded.")); return 0; }
                 double yaw = Math.toRadians(data.yaw());
                 var destination = new net.minecraft.world.phys.Vec3(data.position().getX() + 0.5D - Math.sin(yaw) * 1.8D, data.position().getY(), data.position().getZ() + 0.5D + Math.cos(yaw) * 1.8D);
                 var targetLevel = level;
+                float exteriorYaw = data.yaw();
                 context.getSource().getServer().execute(() -> {
                     if (player.connection != null) {
                         TardisTeleportCooldowns.clear(player.getUUID());
-                        player.teleportTo(targetLevel, destination.x, destination.y, destination.z, java.util.Set.of(), net.minecraft.util.Mth.wrapDegrees(data.yaw() + 180.0F), 0.0F, false);
+                        player.teleportTo(targetLevel, destination.x, destination.y, destination.z, java.util.Set.of(), net.minecraft.util.Mth.wrapDegrees(exteriorYaw + 180.0F), 0.0F, false);
                     }
                 });
             } else {
@@ -155,6 +171,22 @@ public final class IntoTheVortexCommands {
         return 1;
     }
 
+    private static int recover(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) {
+        UUID id;
+        try {
+            id = UUID.fromString(StringArgumentType.getString(context, "id"));
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal("Invalid TARDIS UUID."));
+            return 0;
+        }
+        if (!TardisTravelManager.recover(context.getSource().getServer(), id)) {
+            context.getSource().sendFailure(Component.literal("The TARDIS must be landed and crashed before it can be recovered."));
+            return 0;
+        }
+        context.getSource().sendSuccess(() -> Component.literal("TARDIS " + id + " recovered. It remains locked with its doors closed."), false);
+        return 1;
+    }
+
     private static int sendStatus(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, String category) {
         UUID id;
         try {
@@ -206,6 +238,32 @@ public final class IntoTheVortexCommands {
         else updated = com.intothevortex.tardis.TardisFuelManager.setFuel(data, data.fuel() + value);
         TardisManager.save(context.getSource().getServer(), updated);
         context.getSource().sendSuccess(() -> Component.literal("TARDIS fuel: " + updated.fuel() + "/" + updated.maxFuel()), false);
+        return 1;
+    }
+
+    private static int modifyLoyalty(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, boolean set) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        UUID id;
+        try {
+            id = UUID.fromString(StringArgumentType.getString(context, "id"));
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal("Invalid TARDIS UUID."));
+            return 0;
+        }
+        TardisData data = TardisManager.get(context.getSource().getServer(), id);
+        if (data == null) {
+            context.getSource().sendFailure(Component.literal("Unknown TARDIS: " + id));
+            return 0;
+        }
+        ServerPlayer player = EntityArgument.getPlayer(context, "player");
+        if (!set) {
+            TardisLoyalty loyalty = TardisLoyaltyManager.get(context.getSource().getServer(), id, player.getUUID());
+            context.getSource().sendSuccess(() -> Component.literal("Loyalty for " + player.getGameProfile().name() + ": " + loyalty.rank() + " (" + loyalty.level() + ")"), false);
+            return 1;
+        }
+        int value = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "value");
+        TardisLoyaltyManager.set(context.getSource().getServer(), id, player.getUUID(), value);
+        TardisLoyalty loyalty = TardisLoyaltyManager.get(context.getSource().getServer(), id, player.getUUID());
+        context.getSource().sendSuccess(() -> Component.literal("Set loyalty for " + player.getGameProfile().name() + ": " + loyalty.rank() + " (" + loyalty.level() + ")"), false);
         return 1;
     }
 }

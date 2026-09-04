@@ -42,6 +42,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         state.travelAnimation = entity.getTravelAnimation();
         state.doorAnimation = entity.getDoorAnimation();
         state.powered = entity.isPowered();
+        state.cloaked = entity.isCloaked();
     }
 
     @Override
@@ -62,7 +63,8 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         poseStack.translate(0.0F, -1.5F, 0.0F);
         var definition = ExteriorRegistry.get(Identifier.parse(state.exterior));
         var model = models.computeIfAbsent(definition.model(), TardisModelRegistry::exterior);
-        int renderColor = ((int) (Math.max(0.0F, Math.min(1.0F, state.travelOpacity)) * 255.0F) << 24) | 0xFFFFFF;
+        float opacity = state.cloaked ? 0.1F : 1.0F;
+        int renderColor = ((int) (Math.max(0.0F, Math.min(1.0F, state.travelOpacity * opacity)) * 255.0F) << 24) | 0xFFFFFF;
         collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucent(definition.texture()), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
         if (state.powered && definition.emission() != null) {
             collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucentEmissive(definition.emission()), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
