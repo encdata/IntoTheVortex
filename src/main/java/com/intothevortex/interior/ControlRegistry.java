@@ -47,9 +47,9 @@ public final class ControlRegistry {
         register("save_waypoint", ControlBehaviors.SAVE_WAYPOINT, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("load_waypoint", ControlBehaviors.LOAD_WAYPOINT, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("increment", ControlBehaviors.INCREMENT, ConsoleInputType.KNOB);
-        register("x", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB);
-        register("y", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB);
-        register("z", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB);
+        register("x", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB, ConsoleInputType.VALVE);
+        register("y", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB, ConsoleInputType.VALVE);
+        register("z", ControlBehaviors.COORDINATE, ConsoleInputType.KNOB, ConsoleInputType.VALVE);
     }
 
     public static RegisteredControl register(String path, ConsoleInputType... types) {

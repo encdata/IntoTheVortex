@@ -16,7 +16,7 @@ public final class ConsoleRegistry {
     public static void initialize() {
         register(new ConsoleDefinition(TOYOTA, id("interior/toyota"), id("textures/blockentities/consoles/toyota_default.png"), id("textures/blockentities/consoles/toyota_emission.png"), java.util.List.of(
                 control("throttle", ConsoleInputType.LEVER, 0.440625F, 0.575F, 1.435938F, 0.2125F, 0.2F, "throttle", 0.0F, 4.0F),
-                control("handbrake", ConsoleInputType.LEVER, -0.525781F, 0.5625F, 1.4125F, 0.2F, 0.15F, "handbrake"),
+                control("handbrake", ConsoleInputType.LEVER, -0.525781F, 0.5625F, 1.4125F, 0.2F, 0.15F, "handbrake", 0.0F, 1.0F),
                 control("auto_pilot", ConsoleInputType.SWITCH, -0.396094F, 0.6500F, 1.053125F, 0.1125F, 0.1F, "autopilot"),
                 control("door", ConsoleInputType.BUTTON, -0.377344F, 0.5875F, -1.398438F, 0.1625F, 0.175F, "door_control"),
                 control("door_lock", ConsoleInputType.KEY_SWITCH, 0.348438F, 0.7125F, -0.921875F, 0.075F, 0.0875F, "door_lock"),
@@ -32,9 +32,9 @@ public final class ConsoleRegistry {
                 control("telepathic", ConsoleInputType.BUTTON, 0.925F, 0.5625F, 0.539063F, 0.8F, 0.1875F, "telepathic"),
                 control("land_type", ConsoleInputType.BUTTON, -0.399219F, 0.6775F, -1.06875F, 0.1625F, 0.15F, "land_type"),
                 control("increment", ConsoleInputType.KNOB, -0.8875F, 0.6500F, -0.773438F, 0.1125F, 0.1F, "increment"),
-                control("x", ConsoleInputType.KNOB, -0.786719F, 0.7F, -0.545313F, 0.0875F, 0.0875F, "x"),
-                control("y", ConsoleInputType.KNOB, -1.046875F, 0.65F, -0.435938F, 0.0875F, 0.0875F, "y"),
-                control("z", ConsoleInputType.KNOB, -1.0875F, 0.6F, -0.723438F, 0.0875F, 0.0875F, "z"),
+                control("x", ConsoleInputType.KNOB, -0.786719F, 0.7F, -0.545313F, 0.0875F, 0.0875F, "x", -29999999.0F, 29999999.0F),
+                control("y", ConsoleInputType.KNOB, -1.046875F, 0.65F, -0.435938F, 0.0875F, 0.0875F, "y", -2032.0F, 2031.0F),
+                control("z", ConsoleInputType.KNOB, -1.0875F, 0.6F, -0.723438F, 0.0875F, 0.0875F, "z", -29999999.0F, 29999999.0F),
                 control("randomiser", ConsoleInputType.KNOB, 0.585156F, 0.575F, -1.425F, 0.1375F, 0.075F, "randomiser"),
                 control("direction", ConsoleInputType.KNOB, 0.5375F, 0.75F, -0.626563F, 0.1125F, 0.1125F, "direction"),
                 control("hail_mary", ConsoleInputType.BUTTON, -0.958594F, 0.575F, -1.2625F, 0.1125F, 0.125F, "hail_mary"),

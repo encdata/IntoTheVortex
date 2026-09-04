@@ -180,7 +180,7 @@ public final class ControlBehaviors {
 
         @Override public InteractionResult onDrag(ControlUseContext context, float value) {
             if (!Float.isFinite(value)) return InteractionResult.FAILED_INVALID_CONTROL_STATE;
-            return changeCoordinate(context, value - context.currentValue());
+            return setCoordinate(context, value);
         }
     };
 
@@ -294,6 +294,19 @@ public final class ControlBehaviors {
         TardisData updated = context.tardis().withRequestedDestination(new TardisTravelDestination(context.tardis().requestedDestinationDimension(), new BlockPos((int) x, (int) y, (int) z), context.tardis().requestedDestinationYaw()));
         TardisManager.save(context.level().getServer(), updated);
         send(context.player(), context.definition().id().toUpperCase(java.util.Locale.ROOT) + ": " + new BlockPos((int) x, (int) y, (int) z));
+        return InteractionResult.SUCCESS;
+    }
+
+    private static InteractionResult setCoordinate(ControlUseContext context, float value) {
+        if (context.tardis() == null || !Float.isFinite(value)) return InteractionResult.FAILED_INVALID_CONTROL_STATE;
+        BlockPos current = context.tardis().requestedDestinationPosition();
+        int coordinate = Math.round(Math.clamp(value, context.definition().minimum(), context.definition().maximum()));
+        int x = current.getX(), y = current.getY(), z = current.getZ();
+        if (context.definition().id().equals("x")) x = coordinate;
+        if (context.definition().id().equals("y")) y = coordinate;
+        if (context.definition().id().equals("z")) z = coordinate;
+        TardisManager.save(context.level().getServer(), context.tardis().withRequestedDestination(new TardisTravelDestination(context.tardis().requestedDestinationDimension(), new BlockPos(x, y, z), context.tardis().requestedDestinationYaw())));
+        send(context.player(), context.definition().id().toUpperCase(java.util.Locale.ROOT) + ": " + coordinate);
         return InteractionResult.SUCCESS;
     }
 

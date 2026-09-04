@@ -185,6 +185,9 @@ public final class ConsoleBlockEntity extends BlockEntity {
                     refueling = data.refueling();
                     controlValues.put("throttle", (float) data.getThrottleStage());
                     controlValues.put("handbrake", data.isHandbrakeEngaged() ? 1.0F : 0.0F);
+                    controlValues.put("x", (float) data.requestedDestinationPosition().getX());
+                    controlValues.put("y", (float) data.requestedDestinationPosition().getY());
+                    controlValues.put("z", (float) data.requestedDestinationPosition().getZ());
                 }
                 createHitboxes();
             });
