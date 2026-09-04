@@ -102,8 +102,12 @@ public final class ControlRegistry {
             if (type == ConsoleInputType.LEVER) {
                 capabilities.add(ControlCapability.DRAG);
                 capabilities.add(ControlCapability.MULTI_STATE);
+                capabilities.add(ControlCapability.SCROLL);
             }
-            if (type == ConsoleInputType.KNOB || type == ConsoleInputType.KEY_SWITCH || type == ConsoleInputType.DIAL || type == ConsoleInputType.VALVE || type == ConsoleInputType.JOYSTICK) capabilities.add(ControlCapability.DRAG);
+            if (type == ConsoleInputType.KNOB || type == ConsoleInputType.KEY_SWITCH || type == ConsoleInputType.DIAL || type == ConsoleInputType.VALVE || type == ConsoleInputType.JOYSTICK || type == ConsoleInputType.SLIDER) {
+                capabilities.add(ControlCapability.DRAG);
+                capabilities.add(ControlCapability.SCROLL);
+            }
             if (type == ConsoleInputType.MOMENTARY_BUTTON) {
                 capabilities.add(ControlCapability.PRESS_DOWN);
                 capabilities.add(ControlCapability.RELEASE);

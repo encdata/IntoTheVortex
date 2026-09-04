@@ -24,4 +24,9 @@ public final class MouseHandlerMixin {
     private void intothevortex$consumeControlPress(long window, MouseButtonInfo button, int action, CallbackInfo info) {
         if (Minecraft.getInstance().player != null && (ControlInputManager.beforeMouseInput(button.button(), action) || ControlInputManager.isActive())) info.cancel();
     }
+
+    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    private void intothevortex$consumeControlScroll(long window, double horizontal, double vertical, CallbackInfo info) {
+        if (Minecraft.getInstance().player != null && ControlInputManager.beforeScroll(vertical)) info.cancel();
+    }
 }

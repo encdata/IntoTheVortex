@@ -70,9 +70,10 @@ public final class ControlInputManager {
         if (active == null || definition == null || !consumesCamera) return false;
         if (allowCamera) return false;
         float old = value;
-        if (definition.inputType() == ConsoleInputType.LEVER) value = clamp(value - (float) dy / 160.0F, definition);
-        if (definition.inputType() == ConsoleInputType.KNOB || definition.inputType() == ConsoleInputType.KEY_SWITCH) value = clamp(value + (float) dx / 160.0F, definition);
-        if (definition.inputType() == ConsoleInputType.JOYSTICK) value = clamp(value + (float) dx / 180.0F, definition);
+        float sensitivity = inputSensitivity();
+        if (definition.inputType() == ConsoleInputType.LEVER) value = clamp(value - (float) dy / 160.0F * sensitivity, definition);
+        if (definition.inputType() == ConsoleInputType.KNOB || definition.inputType() == ConsoleInputType.KEY_SWITCH || definition.inputType() == ConsoleInputType.VALVE || definition.inputType() == ConsoleInputType.DIAL || definition.inputType() == ConsoleInputType.SLIDER) value = clamp(value + (float) dx / (definition.inputType() == ConsoleInputType.SLIDER ? 160.0F : 1.0F) * sensitivity, definition);
+        if (definition.inputType() == ConsoleInputType.JOYSTICK) value = clamp(value + (float) dx / 180.0F * sensitivity, definition);
         if (active.controlId().equals("handbrake")) value = value >= 0.5F ? 1.0F : 0.0F;
         if (old != value) send(active, value, false);
         if (dx != 0.0D || dy != 0.0D) dragMoved = true;
@@ -80,6 +81,17 @@ public final class ControlInputManager {
             movementLogged = true;
             LOGGER.info("Control drag movement received: id={}, dx={}, dy={}, value={}", active.controlId(), dx, dy, value);
         }
+        return true;
+    }
+
+    public static boolean beforeScroll(double amount) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.player instanceof LocalPlayer) || minecraft.screen != null || amount == 0.0D) return false;
+        if (!(minecraft.crosshairPickEntity instanceof ControlHitboxEntity control)) return false;
+        ConsoleControlDefinition next = control.definition();
+        var registered = ControlRegistry.get(control.controlId());
+        if (next == null || registered == null || !registered.capabilities().contains(com.intothevortex.interior.ControlCapability.SCROLL)) return false;
+        ClientPlayNetworking.send(new ControlStepPayload(control.consolePos(), control.controlId(), amount > 0.0D ? 1.0F : -1.0F));
         return true;
     }
 
@@ -128,7 +140,7 @@ public final class ControlInputManager {
 
     private static boolean isDragControl(ConsoleControlDefinition control) {
         ConsoleInputType type = control.inputType();
-        return type == ConsoleInputType.LEVER || type == ConsoleInputType.KNOB || type == ConsoleInputType.JOYSTICK || type == ConsoleInputType.MOMENTARY_BUTTON || type == ConsoleInputType.KEY_SWITCH;
+        return type == ConsoleInputType.LEVER || type == ConsoleInputType.KNOB || type == ConsoleInputType.VALVE || type == ConsoleInputType.DIAL || type == ConsoleInputType.SLIDER || type == ConsoleInputType.JOYSTICK || type == ConsoleInputType.MOMENTARY_BUTTON || type == ConsoleInputType.KEY_SWITCH;
     }
 
     private static boolean isClickControl(ConsoleControlDefinition control) {
@@ -145,6 +157,16 @@ public final class ControlInputManager {
 
     private static float clamp(float value, ConsoleControlDefinition definition) {
         return Math.clamp(value, definition.minimum(), definition.maximum());
+    }
+
+    private static float inputSensitivity() {
+        Minecraft minecraft = Minecraft.getInstance();
+        long window = minecraft.getWindow().handle();
+        boolean control = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
+        boolean shift = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+        if (control) return 0.25F;
+        if (shift) return 4.0F;
+        return 1.0F;
     }
 
 }
