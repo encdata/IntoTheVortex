@@ -116,6 +116,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         if (!ControlRegistry.supports(id, mode) || !(player instanceof ServerPlayer serverPlayer)) return;
         ControlUseContext context = ControlUseContext.resolve(serverPlayer, this, id);
         if (context == null || context.validate() != InteractionResult.SUCCESS) return;
+        if (direction > 0.0F && id.equals("throttle") && context.tardis() != null && context.tardis().isHandbrakeEngaged() && com.intothevortex.tardis.RwfFlightManager.start(serverPlayer, context.tardis().id())) return;
         InteractionResult result = direction > 0.0F ? context.registered().behavior().onPress(context.withInputDelta(direction)) : context.registered().behavior().onSecondaryPress(context.withInputDelta(direction));
         if (result == InteractionResult.SUCCESS) com.intothevortex.tardis.TardisFlightEventManager.onControl(context);
         if (result == InteractionResult.FAILED_INVALID_CONTROL_STATE) result = context.registered().behavior().onPress(context.withInputDelta(direction));
@@ -126,6 +127,7 @@ public final class ConsoleBlockEntity extends BlockEntity {
         if (!(player instanceof ServerPlayer serverPlayer)) return;
         ControlUseContext context = ControlUseContext.resolve(serverPlayer, this, id);
         if (context == null || context.validate() != InteractionResult.SUCCESS || !context.registered().capabilities().contains(ControlCapability.BUTTON)) return;
+        if (id.equals("throttle") && context.tardis() != null && context.tardis().isHandbrakeEngaged() && com.intothevortex.tardis.RwfFlightManager.start(serverPlayer, context.tardis().id())) return;
         InteractionResult result = context.registered().behavior().onPress(context);
         if (result == InteractionResult.SUCCESS) com.intothevortex.tardis.TardisFlightEventManager.onControl(context);
         if (result != InteractionResult.SUCCESS) serverPlayer.sendSystemMessage(Component.literal(result.name()), true);

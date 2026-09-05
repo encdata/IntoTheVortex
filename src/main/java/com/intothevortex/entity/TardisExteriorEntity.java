@@ -26,6 +26,7 @@ import com.intothevortex.tardis.TardisTravelState;
 import com.intothevortex.tardis.TardisTeleportCooldowns;
 import com.intothevortex.tardis.TardisLoyalty;
 import com.intothevortex.tardis.TardisLoyaltyManager;
+import com.intothevortex.tardis.RwfFlightManager;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -49,6 +50,11 @@ public final class TardisExteriorEntity extends Entity {
     private static final EntityDataAccessor<Boolean> POWERED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> CLOAKED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> SHIELDED = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> RWF_FLIGHT = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Float> RWF_TARGET_X = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> RWF_TARGET_Y = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> RWF_TARGET_Z = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<String> RWF_PILOT = SynchedEntityData.defineId(TardisExteriorEntity.class, EntityDataSerializers.STRING);
     private UUID tardisId = new UUID(0L, 0L);
     private final Set<UUID> playersInDoorway = new HashSet<>();
 
@@ -81,6 +87,14 @@ public final class TardisExteriorEntity extends Entity {
     public boolean isPowered() { return entityData.get(POWERED); }
     public boolean isCloaked() { return entityData.get(CLOAKED); }
     public boolean isShielded() { return entityData.get(SHIELDED); }
+    public boolean isRwfFlight() { return entityData.get(RWF_FLIGHT); }
+    public void setRwfFlight(boolean value) { entityData.set(RWF_FLIGHT, value); if (value) syncRwfTarget(getX(), getY(), getZ()); }
+    public void setRwfPilot(UUID playerId) { entityData.set(RWF_PILOT, playerId == null ? "" : playerId.toString()); }
+    public boolean isRwfPilot(Entity entity) { return entity instanceof Player player && player.getUUID().toString().equals(entityData.get(RWF_PILOT)); }
+    public boolean isRwfPilot(UUID playerId) { return playerId != null && playerId.toString().equals(entityData.get(RWF_PILOT)); }
+    public void syncRwfTarget(double x, double y, double z) { entityData.set(RWF_TARGET_X, (float) x); entityData.set(RWF_TARGET_Y, (float) y); entityData.set(RWF_TARGET_Z, (float) z); }
+    public net.minecraft.world.phys.Vec3 rwfTarget() { return new net.minecraft.world.phys.Vec3(entityData.get(RWF_TARGET_X), entityData.get(RWF_TARGET_Y), entityData.get(RWF_TARGET_Z)); }
+    public void applyRwfClientPosition(net.minecraft.world.phys.Vec3 position, float yaw) { setPos(position); setYRot(yaw); setYHeadRot(yaw); setOldPosAndRot(); }
     public void syncPowered(boolean value) { entityData.set(POWERED, value); }
 
     public void syncDoorState(boolean open) {
@@ -99,6 +113,11 @@ public final class TardisExteriorEntity extends Entity {
         builder.define(POWERED, false);
         builder.define(CLOAKED, false);
         builder.define(SHIELDED, false);
+        builder.define(RWF_FLIGHT, false);
+        builder.define(RWF_TARGET_X, 0.0F);
+        builder.define(RWF_TARGET_Y, 0.0F);
+        builder.define(RWF_TARGET_Z, 0.0F);
+        builder.define(RWF_PILOT, "");
     }
 
     @Override
@@ -116,6 +135,7 @@ public final class TardisExteriorEntity extends Entity {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
+        if (RwfFlightManager.isPilot(serverPlayer.level().getServer(), serverPlayer.getUUID())) return InteractionResult.FAIL;
         TardisData tardis = TardisManager.get(serverPlayer.level().getServer(), tardisId);
         if (tardis == null) {
             return InteractionResult.FAIL;
@@ -197,9 +217,9 @@ public final class TardisExteriorEntity extends Entity {
             discard();
             return;
         }
-        entityData.set(CLOAKED, TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "cloak"));
+        entityData.set(CLOAKED, RwfFlightManager.isActive(serverLevel.getServer(), tardisId) ? false : TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "cloak"));
         entityData.set(SHIELDED, TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "shields"));
-        if (tardis.travelState() == TardisTravelState.LANDED && !TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "anti_gravs") && blockPosition().distSqr(tardis.position()) > 0.0D) {
+        if (!RwfFlightManager.isActive(serverLevel.getServer(), tardisId) && tardis.travelState() == TardisTravelState.LANDED && !TardisControlStateManager.enabled(serverLevel.getServer(), tardisId, "anti_gravs") && blockPosition().distSqr(tardis.position()) > 0.0D) {
             TardisData latest = TardisManager.get(serverLevel.getServer(), tardisId);
             if (latest != null && TardisManager.isCanonicalExterior(serverLevel.getServer(), tardisId, getUUID()) && latest.travelState() == TardisTravelState.LANDED) TardisManager.save(serverLevel.getServer(), latest.withExteriorLocation(new com.intothevortex.tardis.TardisTravelDestination(serverLevel.dimension().identifier().toString(), blockPosition(), getYRot())));
         }
@@ -219,12 +239,12 @@ public final class TardisExteriorEntity extends Entity {
             default -> 0.0F;
         };
         entityData.set(TRAVEL_PROGRESS, travelProgress);
-        if (tardis.travelState() == TardisTravelState.FLIGHT || (tardis.travelState() == TardisTravelState.MAT && !getUUID().equals(tardis.exteriorId()))) {
+        if (!RwfFlightManager.isActive(serverLevel.getServer(), tardisId) && (tardis.travelState() == TardisTravelState.FLIGHT || (tardis.travelState() == TardisTravelState.MAT && !getUUID().equals(tardis.exteriorId())))) {
             discard();
             return;
         }
         if (tardis != null) entityData.set(EXTERIOR, tardis.exterior());
-        boolean open = tardis != null && tardis.travelState() == TardisTravelState.LANDED && tardis.doorOpen() && !tardis.locked();
+        boolean open = tardis != null && (tardis.travelState() == TardisTravelState.LANDED || RwfFlightManager.isActive(serverLevel.getServer(), tardisId)) && tardis.doorOpen() && !tardis.locked();
         entityData.set(DOOR_OPEN, open);
         if (!open) {
             playersInDoorway.clear();
@@ -232,6 +252,7 @@ public final class TardisExteriorEntity extends Entity {
         }
         Set<UUID> present = new HashSet<>();
         for (ServerPlayer player : serverLevel.getEntitiesOfClass(ServerPlayer.class, doorArea())) {
+            if (RwfFlightManager.isPilot(serverLevel.getServer(), player.getUUID())) continue;
             present.add(player.getUUID());
             if (TardisTeleportCooldowns.active(serverLevel.getServer(), player.getUUID())) continue;
             TardisData accessData = TardisManager.get(serverLevel.getServer(), tardisId);
@@ -308,6 +329,11 @@ public final class TardisExteriorEntity extends Entity {
 
     @Override
     public boolean canBeCollidedWith(Entity entity) {
-        return true;
+        return !isRwfPilot(entity);
+    }
+
+    @Override
+    public boolean canCollideWith(Entity entity) {
+        return !isRwfPilot(entity) && super.canCollideWith(entity);
     }
 }

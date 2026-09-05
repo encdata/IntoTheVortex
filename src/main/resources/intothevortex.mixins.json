@@ -12,7 +12,9 @@
     "client.SkyRendererMixin",
     "client.MouseHandlerMixin",
     "client.KeyboardHandlerMixin",
-    "client.ControlHitboxEntityMixin"
+    "client.ControlHitboxEntityMixin",
+    "client.AvatarRendererMixin",
+    "client.LivingEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

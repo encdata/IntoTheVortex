@@ -18,4 +18,10 @@ public final class TardisExteriorRenderState extends EntityRenderState {
     public float consoleHandbrake;
     public boolean powered;
     public boolean cloaked;
+    public boolean rwfFlight;
+    public float rwfTilt;
+    public float rwfPitch;
+    public float rwfRoll;
+    public float rwfSpin;
+    public float rwfBob;
 }

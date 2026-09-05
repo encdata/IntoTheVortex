@@ -222,6 +222,7 @@ public final class TardisManager {
         String dimension = level.dimension().identifier().toString();
         for (UUID id : ids(server)) {
             TardisData data = get(server, id);
+            if (RwfFlightManager.isActive(server, id)) continue;
             if (data == null || (data.travelState() != TardisTravelState.LANDED && data.travelState() != TardisTravelState.MAT) || !dimension.equals(data.dimension())) continue;
             if ((data.position().getX() >> 4) != chunk.getPos().x() || (data.position().getZ() >> 4) != chunk.getPos().z()) continue;
             Set<UUID> queued = RECONCILIATIONS_QUEUED.computeIfAbsent(server, ignored -> new HashSet<>());
@@ -249,6 +250,7 @@ public final class TardisManager {
     public static void tickLoadedExteriorRecovery(MinecraftServer server) {
         for (UUID id : ids(server)) {
             TardisData data = get(server, id);
+            if (RwfFlightManager.isActive(server, id)) continue;
             if (data == null || (data.travelState() != TardisTravelState.LANDED && data.travelState() != TardisTravelState.MAT)) continue;
             if (isExteriorSpawnPending(server, id)) continue;
             ServerLevel level = getLevel(server, data.dimension());

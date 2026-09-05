@@ -43,6 +43,7 @@ public final class TardisTravelManager {
     }
 
     public static boolean startTravel(MinecraftServer server, UUID id, TardisTravelDestination requestedDestination) {
+        if (RwfFlightManager.isActive(server, id)) return false;
         TardisData data = TardisManager.get(server, id);
         PreflightResult preflight = TardisPreflightValidator.validate(server, id, requestedDestination);
         if (!preflight.success()) return false;
@@ -73,6 +74,7 @@ public final class TardisTravelManager {
     }
 
     public static boolean tryFly(MinecraftServer server, UUID id) {
+        if (RwfFlightManager.isActive(server, id)) return false;
         TardisData data = TardisManager.get(server, id);
         if (data == null || data.travelState() != TardisTravelState.LANDED || data.isCrashed() || !data.powered() || data.isHandbrakeEngaged() || data.getThrottleStage() <= 0) return false;
         TardisTravelDestination destination = new TardisTravelDestination(data.requestedDestinationDimension(), data.requestedDestinationPosition(), data.requestedDestinationYaw());

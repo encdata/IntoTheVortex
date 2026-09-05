@@ -134,6 +134,7 @@ public final class ControlBehaviors {
 
         @Override public InteractionResult onSecondaryPress(ControlUseContext context) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
+            if (context.tardis().isHandbrakeEngaged() && com.intothevortex.tardis.RwfFlightManager.start(context.player(), context.tardis().id())) return InteractionResult.SUCCESS;
             context.console().setThrottleStage(context.player(), context.tardis().getThrottleStage() - 1);
             return InteractionResult.SUCCESS;
         }

@@ -27,7 +27,8 @@ public final class ControlInputManager {
     private static boolean consumesCamera;
     private static boolean movementLogged;
     private static boolean dragMoved;
-    private static final KeyMapping MOVE_CAMERA = new KeyMapping("key.intothevortex.hold_move_camera", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("intothevortex", "controls")));
+    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("intothevortex", "controls"));
+    private static final KeyMapping MOVE_CAMERA = new KeyMapping("key.intothevortex.hold_move_camera", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, CATEGORY);
 
     private ControlInputManager() {}
 
@@ -61,7 +62,7 @@ public final class ControlInputManager {
         }
         if (action == GLFW.GLFW_PRESS && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && minecraft.crosshairPickEntity instanceof ControlHitboxEntity control) {
             startFromEntity(control);
-            if (active != null && isClickControl(definition)) ClientPlayNetworking.send(new ControlActivatePayload(control.consolePos(), control.controlId()));
+            if (active != null && (isClickControl(definition) || control.controlId().equals("throttle"))) ClientPlayNetworking.send(new ControlActivatePayload(control.consolePos(), control.controlId()));
             return active != null;
         }
         return false;

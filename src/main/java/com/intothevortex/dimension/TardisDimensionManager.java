@@ -196,7 +196,17 @@ public final class TardisDimensionManager {
             if (level.players().isEmpty()) {
                 int ticks = EMPTY_TICKS.merge(id, 1, Integer::sum);
                 if (ticks >= 200) unloadIfEmpty(server, id);
-            } else EMPTY_TICKS.remove(id);
+            } else {
+                EMPTY_TICKS.remove(id);
+                TardisData data = TardisManager.get(server, id);
+                if (data != null) {
+                    ServerLevel exterior = server.getLevel(parseDimension(data.dimension()));
+                    if (exterior != null) {
+                        net.minecraft.core.BlockPos center = data.position();
+                        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) exterior.getChunkAt(center.offset(dx * 16, 0, dz * 16));
+                    }
+                }
+            }
         }
     }
 
