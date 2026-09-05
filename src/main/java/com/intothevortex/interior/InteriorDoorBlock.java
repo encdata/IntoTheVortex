@@ -64,7 +64,6 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
         return super.playerWillDestroy(level, pos, state, player);
     }
 
-
     public static void syncState(ServerLevel exteriorWorld, java.util.UUID id, boolean open) {
         ServerLevel interior = TardisDimensionManager.ensureLoaded(exteriorWorld.getServer(), id);
         net.minecraft.core.BlockPos door = interior == null ? null : TardisDimensionManager.interiorDoor(interior);
@@ -186,8 +185,6 @@ public final class InteriorDoorBlock extends Block implements EntityBlock {
     protected VoxelShape getShape(BlockState state, BlockGetter level, net.minecraft.core.BlockPos pos, CollisionContext context) {
         return shape(state.getValue(FACING));
     }
-
-
 
     @Override protected InteractionResult useWithoutItem(BlockState state, Level level, net.minecraft.core.BlockPos pos, Player player, BlockHitResult hit) {
         return interact(level, pos, player, ItemStack.EMPTY);

@@ -5,10 +5,10 @@ public record TravelTransform(float scale, float verticalOffset, float yawOffset
 
     public static TravelTransform interpolate(TravelTransform from, TravelTransform to, float progress) {
         return new TravelTransform(
-                from.scale() + (to.scale() - from.scale()) * progress,
-                from.verticalOffset() + (to.verticalOffset() - from.verticalOffset()) * progress,
-                from.yawOffset() + (to.yawOffset() - from.yawOffset()) * progress,
-                from.opacity() + (to.opacity() - from.opacity()) * progress
+        from.scale() + (to.scale() - from.scale()) * progress,
+        from.verticalOffset() + (to.verticalOffset() - from.verticalOffset()) * progress,
+        from.yawOffset() + (to.yawOffset() - from.yawOffset()) * progress,
+        from.opacity() + (to.opacity() - from.opacity()) * progress
         );
     }
 

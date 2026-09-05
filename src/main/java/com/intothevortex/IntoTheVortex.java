@@ -123,4 +123,3 @@ public final class IntoTheVortex implements ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> server.execute(() -> RwfFlightManager.onPlayerDisconnect(server, handler.getPlayer().getUUID())));
     }
 }
-

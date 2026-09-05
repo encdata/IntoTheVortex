@@ -29,16 +29,16 @@ public final class ExteriorRegistry {
 
     public static void initialize() {
         register(new ExteriorDefinition(
-                DEFAULT_ID,
-                Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "exterior/police_box"),
-                Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/entity/exterior/policebox_alt.png"),
-                Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/entity/exterior/policebox_alt_emission.png"),
-                1.2F,
-                2.8F,
-                0.0F,
-                0.0F,
-                -0.6F,
-                AnimationDefinition.DOOR_SWING
+        DEFAULT_ID,
+        Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "exterior/police_box"),
+        Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/entity/exterior/policebox_alt.png"),
+        Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/entity/exterior/policebox_alt_emission.png"),
+        1.2F,
+        2.8F,
+        0.0F,
+        0.0F,
+        -0.6F,
+        AnimationDefinition.DOOR_SWING
         ));
         registerVariant("gamblebox", "gamblebox.png", "gamblebox_emission.png");
         registerVariant("toyota_alt", "policebox_alt2.png", "policebox_alt2_emission.png");

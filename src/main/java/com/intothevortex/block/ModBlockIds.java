@@ -10,8 +10,8 @@ public final class ModBlockIds {
 
     private static ResourceKey<Block> create(String name) {
         return ResourceKey.create(
-                Registries.BLOCK,
-                Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, name)
+        Registries.BLOCK,
+        Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, name)
         );
     }
 
@@ -29,4 +29,3 @@ public final class ModBlockIds {
     private ModBlockIds() {
     }
 }
-

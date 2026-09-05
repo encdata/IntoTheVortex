@@ -42,34 +42,34 @@ public final class TardisManager {
 
     public static TardisData create(ServerPlayer owner, ServerLevel level, BlockPos position) {
         TardisData tardis = new TardisData(
-                UUID.randomUUID(),
-                owner.getUUID(),
-                new UUID(0L, 0L),
-                "intothevortex:default",
-                "intothevortex:70default",
-                level.dimension().identifier().toString(),
-                position,
-                new BlockPos(0, 64, 0),
-                false,
-                owner.getYRot() + 180.0F,
-                false,
-                false,
-                false,
-                false,
-                false,
-                "intothevortex:door_swing",
-                "intothevortex:pulsating_demat",
-                "intothevortex:pulsating_mat",
-                TardisTravelState.LANDED,
-                0,
-                0,
-                0,
-                level.dimension().identifier().toString(),
-                position,
-                owner.getYRot() + 180.0F,
-                level.dimension().identifier().toString(),
-                position,
-                owner.getYRot() + 180.0F
+        UUID.randomUUID(),
+        owner.getUUID(),
+        new UUID(0L, 0L),
+        "intothevortex:default",
+        "intothevortex:70default",
+        level.dimension().identifier().toString(),
+        position,
+        new BlockPos(0, 64, 0),
+        false,
+        owner.getYRot() + 180.0F,
+        false,
+        false,
+        false,
+        false,
+        false,
+        "intothevortex:door_swing",
+        "intothevortex:pulsating_demat",
+        "intothevortex:pulsating_mat",
+        TardisTravelState.LANDED,
+        0,
+        0,
+        0,
+        level.dimension().identifier().toString(),
+        position,
+        owner.getYRot() + 180.0F,
+        level.dimension().identifier().toString(),
+        position,
+        owner.getYRot() + 180.0F
         );
         save(level.getServer(), tardis);
         TardisLoyaltyManager.initialize(level.getServer(), tardis.id(), tardis.ownerId());
@@ -237,10 +237,10 @@ public final class TardisManager {
         for (UUID id : ids) {
             try {
                 TardisData data = get(server, id);
-                    if (data != null && (data.travelState() == TardisTravelState.LANDED || data.travelState() == TardisTravelState.MAT) && recoveryAttemptAllowed(server, id)) {
-                        markRecoveryAttempt(server, id);
-                        spawnExterior(server, data);
-                    }
+                if (data != null && (data.travelState() == TardisTravelState.LANDED || data.travelState() == TardisTravelState.MAT) && recoveryAttemptAllowed(server, id)) {
+                    markRecoveryAttempt(server, id);
+                    spawnExterior(server, data);
+                }
             } finally {
                 queued.remove(id);
             }

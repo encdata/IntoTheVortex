@@ -46,9 +46,9 @@ public final class IntoTheVortexCommands {
         root.then(Commands.literal("event").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> sendStatus(context, "event"))));
         root.then(Commands.literal("recover").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> recover(context))));
         root.then(Commands.literal("fuel").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions)
-                .then(Commands.literal("get").executes(context -> modifyFuel(context, "get")))
-                .then(Commands.literal("set").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "set"))))
-                .then(Commands.literal("add").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "add"))))));
+        .then(Commands.literal("get").executes(context -> modifyFuel(context, "get")))
+        .then(Commands.literal("set").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "set"))))
+        .then(Commands.literal("add").then(Commands.argument("value", DoubleArgumentType.doubleArg()).executes(context -> modifyFuel(context, "add"))))));
         root.then(Commands.literal("loyalty").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).then(Commands.argument("player", EntityArgument.player()).executes(context -> modifyLoyalty(context, false)).then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 500)).executes(context -> modifyLoyalty(context, true))))));
         root.then(Commands.literal("summon").then(Commands.argument("id", StringArgumentType.word()).suggests(tardisSuggestions).executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
