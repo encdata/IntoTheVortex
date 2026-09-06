@@ -26,6 +26,15 @@ public final class ModBlockIds {
     public static final ResourceKey<Block> ECAT = create("ecat");
     public static final ResourceKey<Block> GOOD_HEAVENS = create("good_heavens");
 
+    public static final ResourceKey<Block> PREHISTORIC_LOG = create("prehistoric_log");
+    public static final ResourceKey<Block> PREHISTORIC_LEAVES = create("prehistoric_leaves");
+    public static final ResourceKey<Block> PREHISTORIC_PLANKS = create("prehistoric_planks");
+    public static final ResourceKey<Block> PREHISTORIC_BLOCK = create("prehistoric_block");
+    public static final ResourceKey<Block> PREHISTORIC_ORE = create("prehistoric_ore");
+    public static final ResourceKey<Block> DEEPSLATE_PREHISTORIC_ORE = create("deepslate_prehistoric_ore");
+    public static final ResourceKey<Block> PREHISTORIC_STAIRS = create("prehistoric_stairs");
+    public static final ResourceKey<Block> PREHISTORIC_SLAB = create("prehistoric_slab");
+
     private ModBlockIds() {
     }
 }

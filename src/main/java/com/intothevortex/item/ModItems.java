@@ -91,6 +91,46 @@ public final class ModItems {
     ModBlocks.GOOD_HEAVENS
     );
 
+    public static final Item PREHISTORIC_LOG = registerBlock(
+            "prehistoric_log",
+            ModBlocks.PREHISTORIC_LOG
+    );
+
+    public static final Item PREHISTORIC_LEAVES = registerBlock(
+            "prehistoric_leaves",
+            ModBlocks.PREHISTORIC_LEAVES
+    );
+
+    public static final Item PREHISTORIC_PLANKS = registerBlock(
+            "prehistoric_planks",
+            ModBlocks.PREHISTORIC_PLANKS
+    );
+
+    public static final Item PREHISTORIC_STAIRS = registerBlock(
+            "prehistoric_stairs",
+            ModBlocks.PREHISTORIC_STAIRS
+    );
+
+    public static final Item PREHISTORIC_SLAB = registerBlock(
+            "prehistoric_slab",
+            ModBlocks.PREHISTORIC_SLAB
+    );
+
+    public static final Item PREHISTORIC_BLOCK = registerBlock(
+            "prehistoric_block",
+            ModBlocks.PREHISTORIC_BLOCK
+    );
+
+    public static final Item PREHISTORIC_ORE = registerBlock(
+            "prehistoric_ore",
+            ModBlocks.PREHISTORIC_ORE
+    );
+
+    public static final Item DEEPSLATE_PREHISTORIC_ORE = registerBlock(
+            "deepslate_prehistoric_ore",
+            ModBlocks.DEEPSLATE_PREHISTORIC_ORE
+    );
+
     public static final ResourceKey<CreativeModeTab> TAB_KEY =
     ResourceKey.create(
     Registries.CREATIVE_MODE_TAB,
