@@ -52,6 +52,7 @@ public final class ExteriorRegistry {
         registerVariant("midnight", "policebox_midnight.png", "policebox_midnight_emission.png");
         registerVariant("dino", "policebox_dino.png", "policebox_dino_emission.png");
         registerVariant("candy", "policebox_candy.png", "policebox_candy_emission.png");
+        registerVariant("merged", "policebox_rhamnous.png", "policebox_rhamnous_emission.png");
     }
 
     private static void registerVariant(String name, String texture, String emission) {
