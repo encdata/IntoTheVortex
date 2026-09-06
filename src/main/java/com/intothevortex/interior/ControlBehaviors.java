@@ -252,15 +252,6 @@ public final class ControlBehaviors {
         }
     };
 
-    public static final ControlBehavior MONITOR_NAVIGATION = new ControlBehavior() {
-        @Override public InteractionResult onPress(ControlUseContext context) {
-            float value = context.currentValue() >= 0.5F ? 0.0F : 1.0F;
-            context.console().setAuthoritativeValue(context.player(), context.definition().id(), value, false);
-            send(context.player(), context.definition().id() + ": " + (value >= 0.5F ? "Next" : "Previous"));
-            return InteractionResult.SUCCESS;
-        }
-    };
-
     public static final ControlBehavior SONIC_PORT = new ControlBehavior() {
         @Override public InteractionResult onPress(ControlUseContext context) {
             if (context.tardis() == null || !context.tardis().powered()) return InteractionResult.FAILED_NO_POWER;

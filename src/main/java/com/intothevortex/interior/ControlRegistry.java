@@ -29,8 +29,8 @@ public final class ControlRegistry {
         register("handbrake", ControlBehaviors.HANDBRAKE, defaultModes(ConsoleInputType.LEVER, ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.LEVER, ConsoleInputType.SWITCH), ConsoleInputType.LEVER, ConsoleInputType.SWITCH);
         register("land_type", ControlBehaviors.LAND_TYPE, defaultModes(ConsoleInputType.SWITCH, ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.SWITCH, ConsoleInputType.BUTTON), ConsoleInputType.SWITCH, ConsoleInputType.BUTTON);
         register("monitor", ControlBehaviors.MONITOR, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
-        register("monitor_upper", ControlBehaviors.MONITOR_NAVIGATION, ConsoleInputType.BUTTON);
-        register("monitor_left", ControlBehaviors.MONITOR_NAVIGATION, ConsoleInputType.BUTTON);
+        register("monitor_upper", ControlBehaviors.MONITOR, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
+        register("monitor_left", ControlBehaviors.MONITOR, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
         register("power", ControlBehaviors.POWER, defaultModes(ConsoleInputType.SWITCH), defaultCapabilities(ConsoleInputType.SWITCH), ConsoleInputType.SWITCH);
         register("randomiser", ControlBehaviors.RANDOMISER, ConsoleInputType.KNOB);
         register("refueler", ControlBehaviors.REFUELER, defaultModes(ConsoleInputType.BUTTON), defaultCapabilities(ConsoleInputType.BUTTON), ConsoleInputType.BUTTON);
