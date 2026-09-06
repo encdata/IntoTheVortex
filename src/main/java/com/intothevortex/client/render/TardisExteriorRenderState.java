@@ -19,6 +19,8 @@ public final class TardisExteriorRenderState extends EntityRenderState {
     public boolean powered;
     public boolean cloaked;
     public boolean rwfFlight;
+    public boolean interiorPreview;
+    public String interiorPreviewId = "intothevortex:70default";
     public float rwfTilt;
     public float rwfPitch;
     public float rwfRoll;

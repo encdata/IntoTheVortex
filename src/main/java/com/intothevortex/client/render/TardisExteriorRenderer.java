@@ -2,6 +2,8 @@ package com.intothevortex.client.render;
 
 import com.intothevortex.entity.TardisExteriorEntity;
 import com.intothevortex.exterior.ExteriorRegistry;
+import com.intothevortex.interior.InteriorDefinition;
+import com.intothevortex.interior.InteriorRegistry;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -86,12 +88,16 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
         poseStack.scale(1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.5F, 0.0F);
         var definition = ExteriorRegistry.get(Identifier.parse(state.exterior));
-        var model = models.computeIfAbsent(definition.model(), TardisModelRegistry::exterior);
+        var interior = state.interiorPreview ? InteriorRegistry.definition(Identifier.parse(state.interiorPreviewId)) : null;
+        var modelId = state.interiorPreview ? interior.model() : definition.model();
+        var texture = state.interiorPreview ? interior.texture() : definition.texture();
+        var emission = state.interiorPreview ? interior.emission() : definition.emission();
+        var model = models.computeIfAbsent(modelId, id -> state.interiorPreview ? TardisModelRegistry.interior(id) : TardisModelRegistry.exterior(id));
         float opacity = state.cloaked ? 0.1F : 1.0F;
         int renderColor = ((int) (Math.max(0.0F, Math.min(1.0F, state.travelOpacity * opacity)) * 255.0F) << 24) | 0xFFFFFF;
-        collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucent(definition.texture()), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
-        if (state.powered && definition.emission() != null) {
-            collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucentEmissive(definition.emission()), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
+        collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucent(texture), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
+        if (state.powered && emission != null) {
+            collector.submitModel(model, state, poseStack, RenderTypes.entityTranslucentEmissive(emission), state.lightCoords, OverlayTexture.NO_OVERLAY, renderColor, null, 0, (ModelFeatureRenderer.CrumblingOverlay) null);
         }
         poseStack.popPose();
     }

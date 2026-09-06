@@ -24,6 +24,10 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import org.lwjgl.glfw.GLFW;
 import com.intothevortex.network.RwfExitPayload;
 import com.intothevortex.network.RwfStatePayload;
+import com.intothevortex.network.OpenMonitorPayload;
+import com.intothevortex.network.MonitorStatePayload;
+import com.intothevortex.client.monitor.ClientMonitorState;
+import com.intothevortex.client.monitor.TardisMonitorScreen;
 
 public final class IntoTheVortexClient implements ClientModInitializer {
     private static final KeyMapping RWF_EXIT = new KeyMapping("key.intothevortex.rwf_exit", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_TAB, ControlInputManager.CATEGORY);
@@ -79,6 +83,14 @@ public final class IntoTheVortexClient implements ClientModInitializer {
                 if (previousCamera != null) context.client().options.setCameraType(previousCamera);
                 previousCamera = null;
             }
+        }));
+        ClientPlayNetworking.registerGlobalReceiver(OpenMonitorPayload.TYPE, (payload, context) -> context.client().execute(() -> {
+            MonitorStatePayload state = ClientMonitorState.get();
+            if (state != null && state.tardisId().equals(payload.tardisId())) context.client().setScreen(new TardisMonitorScreen(state, payload.monitorPos()));
+        }));
+        ClientPlayNetworking.registerGlobalReceiver(MonitorStatePayload.TYPE, (payload, context) -> context.client().execute(() -> {
+            ClientMonitorState.accept(payload);
+            if (context.client().screen instanceof TardisMonitorScreen monitor) context.client().setScreen(new TardisMonitorScreen(payload, monitor.monitorPos()));
         }));
         ClientPlayNetworking.registerGlobalReceiver(ControlValueSyncPayload.TYPE, (payload, context) -> context.client().execute(() -> {
             if (context.client().level != null && context.client().level.getBlockEntity(payload.consolePos()) instanceof com.intothevortex.interior.ConsoleBlockEntity console) console.applySyncedControlValue(payload.controlId(), payload.value());

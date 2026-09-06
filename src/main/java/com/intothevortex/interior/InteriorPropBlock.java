@@ -16,6 +16,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import com.intothevortex.network.MonitorServer;
 
 public final class InteriorPropBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
     private final boolean console;
@@ -28,6 +29,10 @@ public final class InteriorPropBlock extends Block implements net.minecraft.worl
     @Override public void onPlace(net.minecraft.world.level.block.state.BlockState state, Level level, BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState, boolean movedByPiston) { super.onPlace(state, level, pos, oldState, movedByPiston); if (console && level.getBlockEntity(pos) instanceof ConsoleBlockEntity entity) entity.createHitboxes(); }
     @Override public net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.block.Rotation rotation) { return state; }
     @Override protected InteractionResult useWithoutItem(net.minecraft.world.level.block.state.BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (state.is(InteriorRegistry.WALL_MONITOR) && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            java.util.UUID id = TardisDimensionManager.id(level.dimension());
+            return id != null && MonitorServer.open(serverPlayer, id, pos) ? InteractionResult.SUCCESS : InteractionResult.FAIL;
+        }
         return InteractionResult.PASS;
     }
 

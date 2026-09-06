@@ -30,10 +30,16 @@ import com.intothevortex.exterior.TardisAnimationManager;
 import com.intothevortex.tardis.TardisTravelManager;
 import com.intothevortex.tardis.TardisFuelManager;
 import com.intothevortex.tardis.TardisManager;
+import com.intothevortex.tardis.TardisData;
+import com.intothevortex.tardis.TardisStatusSnapshot;
 import com.intothevortex.tardis.TardisFlightEventManager;
 import com.intothevortex.tardis.RwfFlightManager;
 import com.intothevortex.network.RwfExitPayload;
 import com.intothevortex.network.RwfStatePayload;
+import com.intothevortex.network.OpenMonitorPayload;
+import com.intothevortex.network.MonitorStatePayload;
+import com.intothevortex.network.MonitorSelectionPayload;
+import com.intothevortex.network.MonitorServer;
 import com.intothevortex.interior.InteriorDoorBlock;
 import com.intothevortex.interior.ConsoleRegistry;
 import com.intothevortex.interior.ControlRegistry;
@@ -68,6 +74,9 @@ public final class IntoTheVortex implements ModInitializer {
         PayloadTypeRegistry.clientboundPlay().register(TardisFlightPayload.TYPE, TardisFlightPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RwfExitPayload.TYPE, RwfExitPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(RwfStatePayload.TYPE, RwfStatePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(OpenMonitorPayload.TYPE, OpenMonitorPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(MonitorStatePayload.TYPE, MonitorStatePayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(MonitorSelectionPayload.TYPE, MonitorSelectionPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ControlValuePayload.TYPE, (payload, context) -> context.server().execute(() -> {
             if (!Float.isFinite(payload.value()) || payload.controlId().length() > 64) return;
             if (context.player().distanceToSqr(payload.consolePos().getCenter()) > 36.0D) return;
@@ -94,6 +103,12 @@ public final class IntoTheVortex implements ModInitializer {
             }
         }));
         ServerPlayNetworking.registerGlobalReceiver(RwfExitPayload.TYPE, (payload, context) -> context.server().execute(() -> RwfFlightManager.exit(context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(MonitorSelectionPayload.TYPE, (payload, context) -> context.server().execute(() -> {
+            if (MonitorServer.applySelection(context.player(), payload.tardisId(), payload.monitorPos(), payload.target(), payload.value())) {
+                TardisData data = TardisManager.get(context.server(), payload.tardisId());
+                if (data != null) ServerPlayNetworking.send(context.player(), MonitorStatePayload.from(TardisStatusSnapshot.from(data)));
+            }
+        }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             RwfFlightManager.onPlayerJoin(handler.getPlayer());
             server.execute(() -> server.getAllLevels().forEach(level -> {

@@ -14,6 +14,7 @@ import com.intothevortex.tardis.FlightFailureType;
 import com.intothevortex.tardis.FlightFailureSeverity;
 import com.intothevortex.tardis.TardisStatusManager;
 import com.intothevortex.sound.ControlSoundManager;
+import com.intothevortex.network.MonitorServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
@@ -167,9 +168,7 @@ public final class ControlBehaviors {
     public static final ControlBehavior MONITOR = new ControlBehavior() {
         @Override public InteractionResult onPress(ControlUseContext context) {
             if (context.tardis() == null) return InteractionResult.FAILED_INVALID_CONTROL;
-            var status = TardisStatusManager.get(context.level().getServer(), context.tardis().id());
-            send(context.player(), "TARDIS " + status.id() + " | " + status.travelState() + " | Fuel " + Math.round(status.fuel()) + "/" + Math.round(status.maxFuel()) + " | Throttle " + status.throttleStage() + " | Stabilisers " + (status.autopilot() ? "On" : "Off"));
-            return InteractionResult.SUCCESS;
+            return MonitorServer.open(context.player(), context.tardis().id(), context.position()) ? InteractionResult.SUCCESS : InteractionResult.FAILED_PERMISSION;
         }
     };
 
