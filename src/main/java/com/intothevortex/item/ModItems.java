@@ -150,6 +150,11 @@ public final class ModItems {
     Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "decorative")
     );
 
+    public static final ResourceKey<CreativeModeTab> PREHISTORIC_TAB_KEY = ResourceKey.create(
+    Registries.CREATIVE_MODE_TAB,
+    Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "prehistoric")
+    );
+
     public static final CreativeModeTab TAB =
     Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, TAB_KEY, FabricCreativeModeTab.builder()
     .icon(() -> new ItemStack(TARDIS))
@@ -204,6 +209,22 @@ public final class ModItems {
         output.accept(RUSTY_GRATE_BLOCK);
         output.accept(THICK_GRATE_BLOCK);
         output.accept(RUSTY_THICK_GRATE_BLOCK);
+    })
+    .build());
+
+    public static final CreativeModeTab PREHISTORIC_TAB =
+    Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, PREHISTORIC_TAB_KEY, FabricCreativeModeTab.builder()
+    .icon(() -> new ItemStack(PREHISTORIC_PLANKS))
+    .title(Component.translatable("itemGroup.intothevortex.prehistoric"))
+    .displayItems((parameters, output) -> {
+        output.accept(PREHISTORIC_LOG);
+        output.accept(PREHISTORIC_LEAVES);
+        output.accept(PREHISTORIC_PLANKS);
+        output.accept(PREHISTORIC_STAIRS);
+        output.accept(PREHISTORIC_SLAB);
+        output.accept(PREHISTORIC_BLOCK);
+        output.accept(PREHISTORIC_ORE);
+        output.accept(DEEPSLATE_PREHISTORIC_ORE);
     })
     .build());
 

@@ -4,9 +4,12 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.UntintedParticleLeavesBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.core.particles.ParticleTypes;
 
 import java.util.function.Function;
 import java.util.LinkedHashMap;
@@ -64,50 +67,50 @@ public final class ModBlocks {
 
     public static final Block PREHISTORIC_LOG = register(
             ModBlockIds.PREHISTORIC_LOG,
-            Block::new,
-            BlockBehaviour.Properties.of()
+            RotatedPillarBlock::new,
+            BlockBehaviour.Properties.of().strength(2.0F).sound(net.minecraft.world.level.block.SoundType.WOOD)
     );
 
     public static final Block PREHISTORIC_LEAVES = register(
             ModBlockIds.PREHISTORIC_LEAVES,
-            Block::new,
-            BlockBehaviour.Properties.of()
+            properties -> new UntintedParticleLeavesBlock(0.02F, ParticleTypes.CHERRY_LEAVES, properties),
+            BlockBehaviour.Properties.of().strength(0.2F).sound(net.minecraft.world.level.block.SoundType.GRASS).noOcclusion()
     );
 
     public static final Block PREHISTORIC_PLANKS = register(
             ModBlockIds.PREHISTORIC_PLANKS,
             Block::new,
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.of().strength(2.0F).sound(net.minecraft.world.level.block.SoundType.WOOD)
     );
 
     public static final Block PREHISTORIC_STAIRS = register(
             ModBlockIds.PREHISTORIC_STAIRS,
             properties -> new StairBlock(PREHISTORIC_PLANKS.defaultBlockState(), properties),
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.of().strength(2.0F).sound(net.minecraft.world.level.block.SoundType.WOOD)
     );
 
     public static final Block PREHISTORIC_SLAB = register(
             ModBlockIds.PREHISTORIC_SLAB,
             SlabBlock::new,
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.of().strength(2.0F).sound(net.minecraft.world.level.block.SoundType.WOOD)
     );
 
     public static final Block PREHISTORIC_BLOCK = register(
             ModBlockIds.PREHISTORIC_BLOCK,
             Block::new,
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.of().strength(5.0F, 6.0F).sound(net.minecraft.world.level.block.SoundType.STONE)
     );
 
     public static final Block PREHISTORIC_ORE = register(
             ModBlockIds.PREHISTORIC_ORE,
             Block::new,
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.of().strength(3.0F, 3.0F).sound(net.minecraft.world.level.block.SoundType.STONE)
     );
 
     public static final Block DEEPSLATE_PREHISTORIC_ORE = register(
             ModBlockIds.DEEPSLATE_PREHISTORIC_ORE,
             Block::new,
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.of().strength(4.5F, 3.0F).sound(net.minecraft.world.level.block.SoundType.DEEPSLATE)
     );
 
     public static final Map<String, Block> ROUNDELS = createRoundels();
