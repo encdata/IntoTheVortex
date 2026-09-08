@@ -1,6 +1,7 @@
 package com.intothevortex.client.monitor;
 
 import com.intothevortex.network.MonitorStatePayload;
+import com.intothevortex.IntoTheVortex;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -214,11 +215,13 @@ public final class TardisMonitorScreen extends Screen {
         int previewY = layout.y() + 28;
         int previewSize = 96;
         graphics.fill(previewX, previewY, previewX + previewSize, previewY + previewSize, 0xFF0B1117);
+        if (page == Page.INTERIOR) {
+            graphics.blit(interiorPreviewTexture(), previewX, previewY, previewSize, previewSize, 0.0F, 0.0F, 1.0F, 1.0F);
+            return;
+        }
         TardisExteriorRenderState preview = new TardisExteriorRenderState();
         preview.entityType = ModEntityTypes.TARDIS_EXTERIOR;
-        preview.exterior = page == Page.EXTERIOR ? exteriorOptions().get(exteriorIndex).id().toString() : state.exterior();
-        preview.interiorPreview = page == Page.INTERIOR;
-        preview.interiorPreviewId = page == Page.INTERIOR ? interiorOptions().get(interiorIndex).toString() : state.interior();
+        preview.exterior = exteriorOptions().get(exteriorIndex).id().toString();
         preview.guiPreview = true;
         int doorTicks = Math.floorMod(previewTicks, 80);
         preview.doorOpen = doorTicks >= 40;
@@ -247,6 +250,11 @@ public final class TardisMonitorScreen extends Screen {
         // texture, rather than an absolute GUI position. Passing previewX/Y here
         // moved the TARDIS outside the 96 x 96 render target and made it invisible.
         graphics.entity(preview, 24.0F, new Vector3f(), new Quaternionf(), new Quaternionf(), previewX, previewY, previewX + previewSize, previewY + previewSize);
+    }
+
+    private Identifier interiorPreviewTexture() {
+        Identifier interior = interiorOptions().get(interiorIndex);
+        return Identifier.fromNamespaceAndPath(IntoTheVortex.MOD_ID, "textures/desktop/" + interior.getPath() + ".png");
     }
 
     @Override
