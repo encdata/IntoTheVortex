@@ -80,13 +80,23 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
             poseStack.scale(transform.scale(), transform.scale(), transform.scale());
             state.travelOpacity = transform.opacity();
         }
-        poseStack.mulPose(Axis.YP.rotationDegrees(state.rwfFlight ? 180.0F + state.yaw : 180.0F - state.yaw));
-        if (state.rwfFlight) {
-            poseStack.mulPose(Axis.XN.rotationDegrees(-state.rwfTilt));
-            poseStack.mulPose(Axis.YN.rotationDegrees(state.rwfSpin));
+        if (state.guiPreview) {
+            // GuiGraphics renders its picture-in-picture target with GUI axes.
+            // Applying the world renderer's Y inversion here turns the Blockbench
+            // model upside down, so centre it in GUI space without that inversion.
+            poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw));
+            // The exterior model's origin is its base.  Move that base upward so
+            // the full model, rather than its bottom edge, sits at the GUI centre.
+            poseStack.translate(0.0F, -0.5F, 0.0F);
+        } else {
+            poseStack.mulPose(Axis.YP.rotationDegrees(state.rwfFlight ? 180.0F + state.yaw : 180.0F - state.yaw));
+            if (state.rwfFlight) {
+                poseStack.mulPose(Axis.XN.rotationDegrees(-state.rwfTilt));
+                poseStack.mulPose(Axis.YN.rotationDegrees(state.rwfSpin));
+            }
+            poseStack.scale(1.0F, -1.0F, 1.0F);
+            poseStack.translate(0.0F, -1.5F, 0.0F);
         }
-        poseStack.scale(1.0F, -1.0F, 1.0F);
-        poseStack.translate(0.0F, -1.5F, 0.0F);
         var definition = ExteriorRegistry.get(Identifier.parse(state.exterior));
         var interior = state.interiorPreview ? InteriorRegistry.definition(Identifier.parse(state.interiorPreviewId)) : null;
         var modelId = state.interiorPreview ? interior.model() : definition.model();

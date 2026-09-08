@@ -104,7 +104,7 @@ public final class TardisMonitorScreen extends Screen {
 
     @Override
     public void tick() {
-        previewTicks = (previewTicks + 1) % 80;
+        previewTicks++;
         super.tick();
     }
 
@@ -219,13 +219,18 @@ public final class TardisMonitorScreen extends Screen {
         preview.exterior = page == Page.EXTERIOR ? exteriorOptions().get(exteriorIndex).id().toString() : state.exterior();
         preview.interiorPreview = page == Page.INTERIOR;
         preview.interiorPreviewId = page == Page.INTERIOR ? interiorOptions().get(interiorIndex).toString() : state.interior();
-        preview.doorOpen = previewTicks >= 40;
-        float phase = (previewTicks % 40) / 40.0F;
+        preview.guiPreview = true;
+        int doorTicks = Math.floorMod(previewTicks, 80);
+        preview.doorOpen = doorTicks >= 40;
+        float phase = (doorTicks % 40) / 40.0F;
         preview.doorProgress = preview.doorOpen ? phase : 1.0F - phase;
-        preview.powered = state.powered();
+        // A selection preview should show the complete exterior presentation, not
+        // inherit the selected TARDIS's current power state.  The exterior renderer
+        // draws the emissive texture as a second pass only when this is true.
+        preview.powered = true;
         preview.travelState = "LANDED";
         preview.travelOpacity = 1.0F;
-        preview.yaw = 180.0F + (previewTicks + delta) * 0.8F;
+        preview.yaw = (previewTicks + delta) * 3.0F;
         preview.boundingBoxWidth = 1.5F;
         preview.boundingBoxHeight = 3.1F;
         preview.x = 0.0D;
@@ -237,7 +242,11 @@ public final class TardisMonitorScreen extends Screen {
         preview.isDiscrete = false;
         preview.shadowRadius = 0.0F;
         preview.lightCoords = 15728880;
-        graphics.entity(preview, 24.0F, new Vector3f(previewX + 48.0F, previewY + 82.0F, 0.0F), new Quaternionf(), new Quaternionf(), previewX, previewY, previewX + previewSize, previewY + previewSize);
+        // GuiGraphics renders entities into an off-screen texture bounded by the
+        // final four arguments. Its translation is therefore local to that
+        // texture, rather than an absolute GUI position. Passing previewX/Y here
+        // moved the TARDIS outside the 96 x 96 render target and made it invisible.
+        graphics.entity(preview, 24.0F, new Vector3f(), new Quaternionf(), new Quaternionf(), previewX, previewY, previewX + previewSize, previewY + previewSize);
     }
 
     @Override
