@@ -70,6 +70,7 @@ public final class ModItems {
     );
 
     public static final java.util.Map<String, Item> ROUNDEL_ITEMS = createRoundelItems();
+   // public static final java.util.Map<String, Item> PREHISTORIC_ITEMS = createPrehistoricItems();
 
     private static java.util.Map<String, Item> createRoundelItems() {
         java.util.Map<String, Item> items = new java.util.LinkedHashMap<>();
@@ -80,6 +81,16 @@ public final class ModItems {
         }
         return java.util.Collections.unmodifiableMap(items);
     }
+
+   // private static java.util.Map<String, Item> createPrehistoricItems() {
+  //      java.util.Map<String, Item> items = new java.util.LinkedHashMap<>();
+  //      items.put("prehistoric_log", PREHISTORIC_LOG);
+   //     items.put("prehistoric_leaves", PREHISTORIC_LEAVES);
+   //     for (var entry : ModBlocks.ROUNDELS.entrySet()) {
+    //        if (!items.containsKey(entry.getKey())) items.put(entry.getKey(), registerBlock(entry.getKey(), entry.getValue()));
+    //    }
+   //     return java.util.Collections.unmodifiableMap(items);
+  // }
 
     public static final Item ECAT = registerBlock(
     "ecat",
