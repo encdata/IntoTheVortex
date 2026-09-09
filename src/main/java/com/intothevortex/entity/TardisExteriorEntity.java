@@ -293,9 +293,16 @@ public final class TardisExteriorEntity extends Entity {
 
     private AABB doorArea() {
         double radians = Math.toRadians(getYRot());
-        double x = getX() - Math.sin(radians) * 0.86D;
-        double z = getZ() + Math.cos(radians) * 0.86D;
-        return new AABB(x - 0.62D, getY(), z - 0.62D, x + 0.62D, getY() + 2.55D, z + 0.62D);
+
+        double x = getX() + Math.sin(radians) * 0.86D;
+        double z = getZ() - Math.cos(radians) * 0.86D;
+
+        return new AABB(
+                x - 0.62D, getY(),
+                z - 0.62D,
+                x + 0.62D, getY() + 2.55D,
+                z + 0.62D
+        );
     }
 
     @Override

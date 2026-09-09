@@ -89,7 +89,7 @@ public final class TardisExteriorRenderer extends EntityRenderer<TardisExteriorE
             // the full model, rather than its bottom edge, sits at the GUI centre.
             poseStack.translate(0.0F, -0.5F, 0.0F);
         } else {
-            poseStack.mulPose(Axis.YP.rotationDegrees(state.rwfFlight ? 180.0F + state.yaw : 180.0F - state.yaw));
+            poseStack.mulPose(Axis.YP.rotationDegrees(state.rwfFlight ? 180.0F + state.yaw : 360.0F - state.yaw));
             if (state.rwfFlight) {
                 poseStack.mulPose(Axis.XN.rotationDegrees(-state.rwfTilt));
                 poseStack.mulPose(Axis.YN.rotationDegrees(state.rwfSpin));
